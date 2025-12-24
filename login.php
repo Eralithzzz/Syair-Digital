@@ -6,28 +6,28 @@ $dbname = '';
 $username = 'root';
 $password = '';
 
-if(isset($_SESSION['user_id'])) {
+if (isset($_SESSION['user_id'])) {
     header('Location: userDashboard.php');
     exit();
 }
 
 $error = '';
 
-if($_SERVER['REQUEST_METHOD'] == 'POST') {
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
         $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
         $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        
+
         $email = $_POST['email'];
         $pass = $_POST['password'];
-        
+
         $stmt = $conn->prepare("SELECT * FROM users WHERE email = :email");
         $stmt->bindParam(':email', $email);
         $stmt->execute();
-        
+
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if($user && password_verify($pass, $user['password'])) {
+
+        if ($user && password_verify($pass, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['email'] = $user['email'];
@@ -36,13 +36,14 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         } else {
             $error = 'Invalid email or password';
         }
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         $error = 'Connection failed: ' . $e->getMessage();
     }
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -53,7 +54,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #1a1f3a 0%, #2d1b4e 50%, #1a1f3a 100%);
@@ -63,7 +64,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             align-items: center;
             padding: 20px;
         }
-        
+
         .login-container {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
@@ -72,33 +73,33 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             max-width: 450px;
             width: 100%;
         }
-        
+
         .header {
             background: linear-gradient(135deg, #6b4ce6 0%, #9b59b6 100%);
             color: white;
             padding: 40px 30px;
             text-align: center;
         }
-        
+
         .header h1 {
             font-size: 28px;
             margin-bottom: 10px;
             font-weight: 600;
         }
-        
+
         .header p {
             font-size: 14px;
             opacity: 0.9;
         }
-        
+
         .form-container {
             padding: 40px 30px;
         }
-        
+
         .form-group {
             margin-bottom: 25px;
         }
-        
+
         label {
             display: block;
             margin-bottom: 8px;
@@ -106,7 +107,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             font-weight: 500;
             font-size: 14px;
         }
-        
+
         input[type="email"],
         input[type="password"] {
             width: 100%;
@@ -117,7 +118,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             transition: all 0.3s;
             background: #f7fafc;
         }
-        
+
         input[type="email"]:focus,
         input[type="password"]:focus {
             outline: none;
@@ -125,7 +126,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             background: white;
             box-shadow: 0 0 0 3px rgba(107, 76, 230, 0.1);
         }
-        
+
         .btn-login {
             width: 100%;
             padding: 14px;
@@ -139,12 +140,12 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             transition: all 0.3s;
             margin-top: 10px;
         }
-        
+
         .btn-login:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(107, 76, 230, 0.3);
         }
-        
+
         .error {
             background: #fed7d7;
             color: #c53030;
@@ -154,7 +155,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             font-size: 14px;
             border-left: 4px solid #c53030;
         }
-        
+
         .register-link {
             text-align: center;
             margin-top: 25px;
@@ -163,24 +164,25 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             color: #4a5568;
             font-size: 14px;
         }
-        
+
         .register-link a {
             color: #6b4ce6;
             text-decoration: none;
             font-weight: 600;
             transition: color 0.3s;
         }
-        
+
         .register-link a:hover {
             color: #9b59b6;
         }
-        
+
         .decorative-icon {
             font-size: 50px;
             margin-bottom: 15px;
         }
     </style>
 </head>
+
 <body>
     <div class="login-container">
         <div class="header">
@@ -188,30 +190,31 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             <h1>Syair Digital Collection</h1>
             <p>Login to access the collection</p>
         </div>
-        
+
         <div class="form-container">
-            <?php if($error): ?>
+            <?php if ($error): ?>
                 <div class="error"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
-            
+
             <form method="POST" action="">
                 <div class="form-group">
                     <label for="email">Email Address</label>
                     <input type="email" id="email" name="email" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" id="password" name="password" required>
                 </div>
-                
+
                 <button type="submit" class="btn-login">Login</button>
             </form>
-            
+
             <div class="register-link">
                 Don't have an account? <a href="register.php">Register here</a>
             </div>
         </div>
     </div>
 </body>
+
 </html>
