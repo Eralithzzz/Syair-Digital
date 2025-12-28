@@ -1,32 +1,40 @@
 <?php
-// session_start();
+session_start();
+require_once 'oracle.php';
 
-// if (!isset($_SESSION['user_id'])) {
-//     header('Location: login.php');
-//     exit();
-// }
+// Protect page
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit();
+}
 
-// $host = 'localhost';
-// $dbname = '';
-// $username = 'root';
-// $password = '';
+$syairs = [];
+$error = '';
 
-// try {
-//     $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-//     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+try {
+    // 🔹 Oracle does NOT support LIMIT
+    $sql = "SELECT id, title, author, content, created_at
+            FROM syair
+            ORDER BY created_at DESC
+            FETCH FIRST 10 ROWS ONLY";
 
-//     $stmt = $conn->prepare("SELECT * FROM syair ORDER BY created_at DESC LIMIT 10");
-//     $stmt->execute();
-//     $syairs = $stmt->fetchAll(PDO::FETCH_ASSOC);
-// } catch (PDOException $e) {
-//     $error = 'Connection failed: ' . $e->getMessage();
-// }
+    $stmt = oci_parse($db_conn, $sql);
+    oci_execute($stmt);
 
-// if (isset($_GET['logout'])) {
-//     session_destroy();
-//     header('Location: login.php');
-//     exit();
-// }
+    while ($row = oci_fetch_assoc($stmt)) {
+        $syairs[] = $row;
+    }
+
+} catch (Exception $e) {
+    $error = 'Database error: ' . $e->getMessage();
+}
+
+// Logout
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header('Location: login.php');
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
