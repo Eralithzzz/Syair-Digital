@@ -1,10 +1,6 @@
 <?php
 session_start();
-
-$host = 'localhost';
-$dbname = '';
-$username = 'root';
-$password = '';
+require_once 'oracle.php';
 
 if (isset($_SESSION['user_id'])) {
     header('Location: userDashboard.php');
@@ -13,34 +9,38 @@ if (isset($_SESSION['user_id'])) {
 
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $email = trim($_POST['email']);
+        $pass  = $_POST['password'];
 
-        $email = $_POST['email'];
-        $pass = $_POST['password'];
+        $sql = "SELECT id, username, email, password 
+                FROM users 
+                WHERE email = :email";
 
-        $stmt = $conn->prepare("SELECT * FROM users WHERE email = :email");
-        $stmt->bindParam(':email', $email);
-        $stmt->execute();
+        $stmt = oci_parse($db_conn, $sql);
+        oci_bind_by_name($stmt, ':email', $email);
+        oci_execute($stmt);
 
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $user = oci_fetch_assoc($stmt);
 
-        if ($user && password_verify($pass, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['email'] = $user['email'];
+        if ($user && password_verify($pass, $user['PASSWORD'])) {
+            $_SESSION['user_id']  = $user['ID'];
+            $_SESSION['username'] = $user['USERNAME'];
+            $_SESSION['email']    = $user['EMAIL'];
+
             header('Location: userDashboard.php');
             exit();
         } else {
             $error = 'Invalid email or password';
         }
-    } catch (PDOException $e) {
-        $error = 'Connection failed: ' . $e->getMessage();
+
+    } catch (Exception $e) {
+        $error = 'Login error: ' . $e->getMessage();
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 

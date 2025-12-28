@@ -1,10 +1,6 @@
 <?php
 session_start();
-
-$host = 'localhost';
-$dbname = '';
-$username = 'root';
-$password = '';
+require_once 'oracle.php';
 
 if (isset($_SESSION['user_id'])) {
     header('Location: userDashboard.php');
@@ -14,58 +10,69 @@ if (isset($_SESSION['user_id'])) {
 $error = '';
 $success = '';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        $user = $_POST['username'];
-        $name = $_POST['name'];
-        $email = $_POST['email'];
-        $pass = $_POST['password'];
-        $confirm_pass = $_POST['confirm_password'];
+        $username = trim($_POST['username']);
+        $name     = trim($_POST['name']);
+        $email    = trim($_POST['email']);
+        $pass     = $_POST['password'];
+        $confirm  = $_POST['confirm_password'];
 
         // Validation
-        if ($pass !== $confirm_pass) {
+        if ($pass !== $confirm) {
             $error = 'Passwords do not match';
-        } else if (strlen($pass) < 6) {
+        } elseif (strlen($pass) < 6) {
             $error = 'Password must be at least 6 characters';
         } else {
-            // Check if email already exists
-            $stmt = $conn->prepare("SELECT * FROM users WHERE email = :email");
-            $stmt->bindParam(':email', $email);
-            $stmt->execute();
 
-            if ($stmt->rowCount() > 0) {
+            // 🔹 Check email exists
+            $sql = "SELECT 1 FROM users WHERE email = :email";
+            $stmt = oci_parse($db_conn, $sql);
+            oci_bind_by_name($stmt, ':email', $email);
+            oci_execute($stmt);
+
+            if (oci_fetch($stmt)) {
                 $error = 'Email already registered';
             } else {
-                // Check if username already exists
-                $stmt = $conn->prepare("SELECT * FROM users WHERE username = :username");
-                $stmt->bindParam(':username', $user);
-                $stmt->execute();
 
-                if ($stmt->rowCount() > 0) {
+                // 🔹 Check username exists
+                $sql = "SELECT 1 FROM users WHERE username = :username";
+                $stmt = oci_parse($db_conn, $sql);
+                oci_bind_by_name($stmt, ':username', $username);
+                oci_execute($stmt);
+
+                if (oci_fetch($stmt)) {
                     $error = 'Username already taken';
                 } else {
-                    // Insert new user
-                    $hashed_pass = password_hash($pass, PASSWORD_DEFAULT);
-                    $stmt = $conn->prepare("INSERT INTO users (username, name, email, password, created_at) VALUES (:username, :name, :email, :password, NOW())");
-                    $stmt->bindParam(':username', $user);
-                    $stmt->bindParam(':name', $name);
-                    $stmt->bindParam(':email', $email);
-                    $stmt->bindParam(':password', $hashed_pass);
 
-                    if ($stmt->execute()) {
+                    // 🔹 Insert new user
+                    $hashed = password_hash($pass, PASSWORD_DEFAULT);
+
+                    $sql = "INSERT INTO users 
+                            (id, username, name, email, password, created_at)
+                            VALUES 
+                            (users_seq.NEXTVAL, :username, :name, :email, :password, SYSDATE)";
+
+                    $stmt = oci_parse($db_conn, $sql);
+                    oci_bind_by_name($stmt, ':username', $username);
+                    oci_bind_by_name($stmt, ':name', $name);
+                    oci_bind_by_name($stmt, ':email', $email);
+                    oci_bind_by_name($stmt, ':password', $hashed);
+
+                    if (oci_execute($stmt, OCI_COMMIT_ON_SUCCESS)) {
                         $success = 'Registration successful! You can now login.';
+                    } else {
+                        $error = 'Registration failed';
                     }
                 }
             }
         }
-    } catch (PDOException $e) {
-        $error = 'Connection failed: ' . $e->getMessage();
+    } catch (Exception $e) {
+        $error = 'Error: ' . $e->getMessage();
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
