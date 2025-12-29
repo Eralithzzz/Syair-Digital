@@ -2,76 +2,89 @@
 session_start();
 require_once 'oracle.php';
 
-if (isset($_SESSION['user_id'])) {
-    header('Location: userDashboard.php');
-    exit();
-}
-
 $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    try {
-        $username = trim($_POST['username']);
-        $name     = trim($_POST['name']);
-        $email    = trim($_POST['email']);
-        $pass     = $_POST['password'];
-        $confirm  = $_POST['confirm_password'];
 
-        // Validation
-        if ($pass !== $confirm) {
-            $error = 'Passwords do not match';
-        } elseif (strlen($pass) < 6) {
-            $error = 'Password must be at least 6 characters';
+    $username = trim($_POST['username']);
+    $name     = trim($_POST['name']);
+    $email    = trim($_POST['email']);
+    $pass     = $_POST['password'];
+    $confirm  = $_POST['confirm_password'];
+
+    if ($pass !== $confirm) {
+        $error = 'Passwords do not match';
+    } elseif (strlen($pass) < 6) {
+        $error = 'Password must be at least 6 characters';
+    } else {
+
+        /* 🔹 Check email */
+        $sql = "SELECT 1 FROM BASE_USER WHERE email = :email";
+        $stmt = oci_parse($db_conn, $sql);
+        oci_bind_by_name($stmt, ':email', $email);
+        oci_execute($stmt);
+
+        if (oci_fetch($stmt)) {
+            $error = 'Email already registered';
         } else {
 
-            // 🔹 Check email exists
-            $sql = "SELECT 1 FROM users WHERE email = :email";
+            /* 🔹 Check username */
+            $sql = "SELECT 1 FROM BASE_USER WHERE username = :username";
             $stmt = oci_parse($db_conn, $sql);
-            oci_bind_by_name($stmt, ':email', $email);
+            oci_bind_by_name($stmt, ':username', $username);
             oci_execute($stmt);
 
             if (oci_fetch($stmt)) {
-                $error = 'Email already registered';
+                $error = 'Username already taken';
             } else {
 
-                // 🔹 Check username exists
-                $sql = "SELECT 1 FROM users WHERE username = :username";
-                $stmt = oci_parse($db_conn, $sql);
-                oci_bind_by_name($stmt, ':username', $username);
-                oci_execute($stmt);
+                $hashed = password_hash($pass, PASSWORD_DEFAULT);
 
-                if (oci_fetch($stmt)) {
-                    $error = 'Username already taken';
+                /* 🔹 Get new userId */
+                $sql = "SELECT baseuser_seq.NEXTVAL AS USERID FROM dual";
+                $stmt = oci_parse($db_conn, $sql);
+                oci_execute($stmt);
+                $row = oci_fetch_assoc($stmt);
+                $userId = $row['USERID'];
+
+                /* 🔹 Insert into BASE_USER */
+                $sql = "INSERT INTO BASE_USER
+                        (userId, email, name, username, password, role)
+                        VALUES
+                        (:userId, :email, :name, :username, :password, 'Users')";
+
+                $stmt = oci_parse($db_conn, $sql);
+                oci_bind_by_name($stmt, ':userId', $userId);
+                oci_bind_by_name($stmt, ':email', $email);
+                oci_bind_by_name($stmt, ':name', $name);
+                oci_bind_by_name($stmt, ':username', $username);
+                oci_bind_by_name($stmt, ':password', $hashed);
+
+                if (!oci_execute($stmt, OCI_NO_AUTO_COMMIT)) {
+                    oci_rollback($db_conn);
+                    $error = 'Failed to create user';
                 } else {
 
-                    // 🔹 Insert new user
-                    $hashed = password_hash($pass, PASSWORD_DEFAULT);
-
-                    $sql = "INSERT INTO users 
-                            (id, username, name, email, password, created_at)
-                            VALUES 
-                            (users_seq.NEXTVAL, :username, :name, :email, :password, SYSDATE)";
-
+                    /* 🔹 Insert into USERS table */
+                    $sql = "INSERT INTO USERS (userId) VALUES (:userId)";
                     $stmt = oci_parse($db_conn, $sql);
-                    oci_bind_by_name($stmt, ':username', $username);
-                    oci_bind_by_name($stmt, ':name', $name);
-                    oci_bind_by_name($stmt, ':email', $email);
-                    oci_bind_by_name($stmt, ':password', $hashed);
+                    oci_bind_by_name($stmt, ':userId', $userId);
 
-                    if (oci_execute($stmt, OCI_COMMIT_ON_SUCCESS)) {
+                    if (oci_execute($stmt, OCI_NO_AUTO_COMMIT)) {
+                        oci_commit($db_conn);
                         $success = 'Registration successful! You can now login.';
                     } else {
-                        $error = 'Registration failed';
+                        oci_rollback($db_conn);
+                        $error = 'Failed to assign user role';
                     }
                 }
             }
         }
-    } catch (Exception $e) {
-        $error = 'Error: ' . $e->getMessage();
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
