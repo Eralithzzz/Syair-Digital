@@ -1,6 +1,12 @@
 <?php
 session_start();
 require_once 'oracle.php';
+$success = '';
+if (isset($_SESSION['register_success'])) {
+    $success = $_SESSION['register_success'];
+    unset($_SESSION['register_success']);
+}
+
 
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'Admin') {

@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Password must be at least 6 characters';
     } else {
 
-        /* 🔹 Check email */
+        //Check email
         $sql = "SELECT 1 FROM BASE_USER WHERE email = :email";
         $stmt = oci_parse($db_conn, $sql);
         oci_bind_by_name($stmt, ':email', $email);
@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Email already registered';
         } else {
 
-            /* 🔹 Check username */
+            //Check username 
             $sql = "SELECT 1 FROM BASE_USER WHERE username = :username";
             $stmt = oci_parse($db_conn, $sql);
             oci_bind_by_name($stmt, ':username', $username);
@@ -41,14 +41,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $hashed = password_hash($pass, PASSWORD_DEFAULT);
 
-                /* 🔹 Get new userId */
+                //Get new userId
                 $sql = "SELECT baseuser_seq.NEXTVAL AS USERID FROM dual";
                 $stmt = oci_parse($db_conn, $sql);
                 oci_execute($stmt);
                 $row = oci_fetch_assoc($stmt);
                 $userId = $row['USERID'];
 
-                /* 🔹 Insert into BASE_USER */
+                //Insert into BASE_USER
                 $sql = "INSERT INTO BASE_USER
                         (userId, email, name, username, password, role)
                         VALUES
@@ -66,14 +66,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Failed to create user';
                 } else {
 
-                    /* 🔹 Insert into USERS table */
+                    //Insert into USERS table
                     $sql = "INSERT INTO USERS (userId) VALUES (:userId)";
                     $stmt = oci_parse($db_conn, $sql);
                     oci_bind_by_name($stmt, ':userId', $userId);
 
                     if (oci_execute($stmt, OCI_NO_AUTO_COMMIT)) {
                         oci_commit($db_conn);
-                        $success = 'Registration successful! You can now login.';
+                        $_SESSION['register_success'] = 'Registration successful! Please login.';
+                        header('Location: login.php');
+                        exit();
+
                     } else {
                         oci_rollback($db_conn);
                         $error = 'Failed to assign user role';
