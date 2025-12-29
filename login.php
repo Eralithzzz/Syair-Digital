@@ -199,6 +199,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 50px;
             margin-bottom: 15px;
         }
+        .success {
+    background: #c6f6d5;
+    color: #22543d;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
     </style>
 </head>
 
@@ -209,6 +218,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h1>Syair Digital Collection</h1>
             <p>Login to access the collection</p>
         </div>
+        <?php if (!empty($success)): ?>
+            <div class="success"><?php echo htmlspecialchars($success); ?></div>
+        <?php endif; ?>
 
         <div class="form-container">
             <?php if ($error): ?>
