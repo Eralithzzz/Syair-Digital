@@ -1,13 +1,15 @@
 <?php
 session_start();
 require_once 'oracle.php';
+
+// 1. Check for success message from registration
 $success = '';
 if (isset($_SESSION['register_success'])) {
     $success = $_SESSION['register_success'];
     unset($_SESSION['register_success']);
 }
 
-
+// 2. Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'Admin') {
         header('Location: adminDashboard.php');
@@ -19,6 +21,7 @@ if (isset($_SESSION['user_id'])) {
 
 $error = '';
 
+// 3. Handle Login Logic
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $email = trim($_POST['email']);
@@ -41,24 +44,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['email']    = $user['EMAIL'];
             $_SESSION['role']     = $user['ROLE'];
 
-            // 🔀 Redirect by role
+            // Redirect by role
             if ($user['ROLE'] === 'Admin') {
                 header('Location: adminDashboard.php');
             } else {
                 header('Location: userDashboard.php');
             }
             exit();
-
         } else {
             $error = 'Invalid email or password';
         }
-
     } catch (Exception $e) {
         $error = 'Login error: ' . $e->getMessage();
     }
 }
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -66,185 +66,255 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Syair Digital Collection System</title>
+    <title>Login - Syair Digital</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* 1. RESET & BODY */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1f3a 0%, #2d1b4e 50%, #1a1f3a 100%);
-            min-height: 100vh;
+            background-color: #f8f9fa;
             display: flex;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
             padding: 20px;
         }
 
-        .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-            max-width: 450px;
+        /* 2. MAIN CARD CONTAINER */
+        .container {
+            display: flex;
+            max-width: 900px;
             width: 100%;
+            height: 550px;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
         }
 
-        .header {
-            background: linear-gradient(135deg, #6b4ce6 0%, #9b59b6 100%);
+        /* 3. LEFT PANEL (Maroon) */
+        .left-panel {
+            flex: 1;
+            background-color: #800000;
             color: white;
-            padding: 40px 30px;
-            text-align: center;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
-        .header h1 {
+        .logo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .logo i {
+            font-size: 36px;
+            margin-right: 15px;
+        }
+
+        .logo h1 {
             font-size: 28px;
-            margin-bottom: 10px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
-        .header p {
-            font-size: 14px;
+        .tagline {
+            font-size: 18px;
+            line-height: 1.6;
             opacity: 0.9;
         }
 
-        .form-container {
-            padding: 40px 30px;
+        /* 4. RIGHT PANEL (Login Form) */
+        .right-panel {
+            flex: 1;
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background-color: white;
         }
 
+        .login-header {
+            margin-bottom: 30px;
+        }
+
+        .login-header h2 {
+            color: #800000;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* 5. INPUTS */
         .form-group {
             margin-bottom: 25px;
         }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #2d3748;
-            font-weight: 500;
-            font-size: 14px;
+        .input-with-icon {
+            position: relative;
         }
 
-        input[type="email"],
-        input[type="password"] {
+        .input-with-icon i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #800000;
+        }
+
+        .input-with-icon input {
             width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 15px;
-            transition: all 0.3s;
-            background: #f7fafc;
-        }
-
-        input[type="email"]:focus,
-        input[type="password"]:focus {
+            padding: 15px 15px 15px 45px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s;
             outline: none;
-            border-color: #6b4ce6;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(107, 76, 230, 0.1);
         }
 
-        .btn-login {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #6b4ce6 0%, #9b59b6 100%);
+        .input-with-icon input:focus {
+            border-color: #800000;
+            box-shadow: 0 0 0 2px rgba(128, 0, 0, 0.1);
+        }
+
+        /* 6. LOGIN BUTTON */
+        .login-button {
+            background-color: #800000;
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 16px;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 18px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            width: 100%;
+            transition: background-color 0.3s;
             margin-top: 10px;
         }
 
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(107, 76, 230, 0.3);
+        .login-button:hover {
+            background-color: #660000;
         }
 
-        .error {
-            background: #fed7d7;
-            color: #c53030;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            border-left: 4px solid #c53030;
-        }
-
-        .register-link {
-            text-align: center;
+        /* 7. LINKS SECTION */
+        .links {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-top: 25px;
-            padding-top: 25px;
-            border-top: 1px solid #e2e8f0;
-            color: #4a5568;
             font-size: 14px;
+            font-weight: 600;
         }
 
-        .register-link a {
-            color: #6b4ce6;
+        .links a {
+            color: #800000;
             text-decoration: none;
-            font-weight: 600;
             transition: color 0.3s;
         }
 
-        .register-link a:hover {
-            color: #9b59b6;
+        .links a:hover {
+            color: #660000;
+            text-decoration: underline;
         }
 
-        .decorative-icon {
-            font-size: 50px;
-            margin-bottom: 15px;
+        /* MESSAGES */
+        .error {
+            color: #dc3545;
+            background: rgba(220, 53, 69, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            text-align: center;
         }
+
         .success {
-    background: #c6f6d5;
-    color: #22543d;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 14px;
-}
+            color: #28a745;
+            background: rgba(40, 167, 69, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
 
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                max-width: 500px;
+                height: auto;
+            }
+
+            .left-panel,
+            .right-panel {
+                padding: 30px;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <div class="login-container">
-        <div class="header">
-            <div class="decorative-icon">📜</div>
-            <h1>Syair Digital Collection</h1>
-            <p>Login to access the collection</p>
-        </div>
-        <?php if (!empty($success)): ?>
-            <div class="success"><?php echo htmlspecialchars($success); ?></div>
-        <?php endif; ?>
 
-        <div class="form-container">
-            <?php if ($error): ?>
+    <div class="container">
+        <div class="left-panel">
+            <div class="logo">
+                <i class="fas fa-pen-nib"></i>
+                <h1>Syair Digital</h1>
+            </div>
+            <p class="tagline">
+                Preserving Heritage in the Virtual Realm, Transparent Trading with Cultural Dignity.
+            </p>
+        </div>
+
+        <div class="right-panel">
+            <div class="login-header">
+                <h2>Login</h2>
+                <p>Sign in to your account</p>
+            </div>
+
+            <?php if (!empty($success)): ?>
+                <div class="success"><?php echo htmlspecialchars($success); ?></div>
+            <?php endif; ?>
+
+            <form action="" method="POST">
+                <div class="form-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-envelope"></i>
+                        <input type="text" name="email" placeholder="Email Address" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" placeholder="Password" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="login-button">Login</button>
+            </form>
+
+            <?php if (!empty($error)): ?>
                 <div class="error"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
 
-            <form method="POST" action="">
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-
-                <button type="submit" class="btn-login">Login</button>
-            </form>
-
-            <div class="register-link">
-                Don't have an account? <a href="register.php">Register here</a>
+            <div class="links">
+                <p>New here? <span><a href="register.php">Register now!</span></p></a>
+                <a href="forgot_password.php">Forgot Password?</a>
             </div>
         </div>
     </div>
+
 </body>
 
 </html>

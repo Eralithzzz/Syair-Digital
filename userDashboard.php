@@ -24,7 +24,6 @@ try {
     while ($row = oci_fetch_assoc($stmt)) {
         $syairs[] = $row;
     }
-
 } catch (Exception $e) {
     $error = 'Database error: ' . $e->getMessage();
 }
