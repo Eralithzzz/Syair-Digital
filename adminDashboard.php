@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'oracle.php';
+date_default_timezone_set('Asia/Kuala_Lumpur');
 
 // --- 1. AUTHENTICATION ---
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
@@ -14,8 +15,7 @@ if (isset($_GET['logout'])) {
     exit();
 }
 
-$message = "";
-$error = "";
+$swal = null;
 
 // --- 2. BACKEND LOGIC ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -27,24 +27,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $new_sid = $idRes[0]['NEXT_ID'];
 
             $sqlSyair = "INSERT INTO SYAIR (syairId, title, content, author, yearPublish, userId) 
-                         VALUES (:sid, :title, :content, :author, TO_DATE(:pdate, 'YYYY-MM-DD'), :uid)";
+                         VALUES (:sid, :title, :content, :author, TO_DATE(:pdate, 'YYYY-MM-DD'), :admin_id)";
 
             executeQuery($sqlSyair, [
-                ':sid'     => $new_sid,
-                ':title'   => $_POST['title'],
-                ':content' => $_POST['content'],
-                ':author'  => $_POST['author'],
-                ':pdate'   => $_POST['publish_date'],
-                ':uid'     => $_SESSION['user_id']
+                ':sid'      => $new_sid,
+                ':title'    => $_POST['title'],
+                ':content'  => $_POST['content'],
+                ':author'   => $_POST['author'],
+                ':pdate'    => $_POST['publish_date'],
+                ':admin_id' => $_SESSION['user_id']
             ]);
 
             $sqlStatus = "INSERT INTO STATUS (statusId, syairId, currentStatus, updated_by, status_date)
-                          VALUES (status_seq.NEXTVAL, :sid, 'Approved', :uid, SYSTIMESTAMP)";
-            executeQuery($sqlStatus, [':sid' => $new_sid, ':uid' => $_SESSION['user_id']]);
+                          VALUES (status_seq.NEXTVAL, :sid, 'Approved', :admin_id, SYSTIMESTAMP)";
+            executeQuery($sqlStatus, [':sid' => $new_sid, ':admin_id' => $_SESSION['user_id']]);
 
-            $message = "New poem added successfully.";
+            $swal = ['icon' => 'success', 'title' => 'Poem Added', 'text' => 'New poem has been published successfully.'];
         } catch (Exception $e) {
-            $error = "Failed to add poem: " . $e->getMessage();
+            $swal = ['icon' => 'error', 'title' => 'Error', 'text' => $e->getMessage()];
         }
     }
 
@@ -60,9 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':pdate'   => $_POST['edit_date'],
                 ':sid'     => $_POST['edit_syair_id']
             ]);
-            $message = "Poem updated successfully.";
+            $swal = ['icon' => 'success', 'title' => 'Poem Updated', 'text' => 'The poem details have been updated.'];
         } catch (Exception $e) {
-            $error = "Failed to update: " . $e->getMessage();
+            $swal = ['icon' => 'error', 'title' => 'Update Failed', 'text' => $e->getMessage()];
         }
     }
 
@@ -74,9 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             executeQuery("DELETE FROM LIKED WHERE syairId = :sid", [':sid' => $sid]);
             executeQuery("DELETE FROM STATUS WHERE syairId = :sid", [':sid' => $sid]);
             executeQuery("DELETE FROM SYAIR WHERE syairId = :sid", [':sid' => $sid]);
-            $message = "Poem deleted successfully.";
+            $swal = ['icon' => 'success', 'title' => 'Deleted', 'text' => 'The poem has been permanently deleted.'];
         } catch (Exception $e) {
-            $error = "Delete failed: " . $e->getMessage();
+            $swal = ['icon' => 'error', 'title' => 'Delete Failed', 'text' => $e->getMessage()];
         }
     }
 
@@ -85,9 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $sql = "UPDATE STATUS SET currentStatus = :status, updated_by = :adminId, status_date = SYSTIMESTAMP WHERE syairId = :syairId";
             executeQuery($sql, [':status' => $_POST['status'], ':adminId' => $_SESSION['user_id'], ':syairId' => $_POST['syair_id']]);
-            $message = "Status updated.";
+            $swal = ['icon' => 'success', 'title' => 'Status Updated', 'text' => 'Request successfully ' . strtolower($_POST['status']) . '.'];
         } catch (Exception $e) {
-            $error = $e->getMessage();
+            $swal = ['icon' => 'error', 'title' => 'Error', 'text' => $e->getMessage()];
         }
     }
 
@@ -105,9 +105,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $tbl = ($_POST['role'] == 'Admin') ? 'ADMIN' : 'USERS';
             executeQuery("INSERT INTO $tbl (userId) VALUES (:b_id)", [':b_id' => $new_id]);
-            $message = "User added.";
+            $swal = ['icon' => 'success', 'title' => 'User Created', 'text' => 'New ' . $_POST['role'] . ' account created.'];
         } catch (Exception $e) {
-            $error = $e->getMessage();
+            $swal = ['icon' => 'error', 'title' => 'Creation Failed', 'text' => $e->getMessage()];
         }
     }
 
@@ -118,9 +118,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 "UPDATE BASE_USER SET name=:nm, email=:em, role=:rl WHERE userId=:edit_id",
                 [':nm' => $_POST['edit_name'], ':em' => $_POST['edit_email'], ':rl' => $_POST['edit_role'], ':edit_id' => $_POST['edit_user_id']]
             );
-            $message = "User updated.";
+            $swal = ['icon' => 'success', 'title' => 'User Updated', 'text' => 'User details have been saved.'];
         } catch (Exception $e) {
-            $error = $e->getMessage();
+            $swal = ['icon' => 'error', 'title' => 'Update Failed', 'text' => $e->getMessage()];
         }
     }
 
@@ -140,9 +140,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             executeQuery("DELETE FROM ADMIN WHERE userId=:del_id", [':del_id' => $uid]);
             executeQuery("DELETE FROM USERS WHERE userId=:del_id", [':del_id' => $uid]);
             executeQuery("DELETE FROM BASE_USER WHERE userId=:del_id", [':del_id' => $uid]);
-            $message = "User deleted.";
+            $swal = ['icon' => 'success', 'title' => 'User Deleted', 'text' => 'User and all associated data deleted.'];
         } catch (Exception $e) {
-            $error = $e->getMessage();
+            $swal = ['icon' => 'error', 'title' => 'Delete Failed', 'text' => $e->getMessage()];
         }
     }
 }
@@ -159,15 +159,31 @@ try {
                              FROM SYAIR s JOIN BASE_USER b ON s.userId = b.userId 
                              JOIN STATUS st ON s.syairId = st.syairId WHERE st.currentStatus = 'Pending'");
 
-    $allPoemsList = fetchAll("SELECT s.syairId, s.title, s.content, b.name as author, st.currentStatus, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE 
+    $managePoemsList = fetchAll("SELECT s.syairId, s.title, s.content, s.author, st.currentStatus, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE 
                               FROM SYAIR s 
                               JOIN BASE_USER b ON s.userId = b.userId 
                               JOIN STATUS st ON s.syairId = st.syairId 
                               ORDER BY s.syairId DESC");
 
-    $userList = fetchAll("SELECT userId, name, email, role, username FROM BASE_USER ORDER BY userId DESC");
+    // REPORT LOGIC
+    $reportFilter = $_GET['filter'] ?? 'All';
+    $reportType   = $_GET['report_type'] ?? 'poems';
+
+    if ($reportFilter == 'All') {
+        $sqlReport = "SELECT s.syairId, s.title, s.content, s.author, st.currentStatus, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE 
+                      FROM SYAIR s JOIN STATUS st ON s.syairId = st.syairId ORDER BY s.syairId DESC";
+        $reportPoems = fetchAll($sqlReport);
+    } else {
+        $sqlReport = "SELECT s.syairId, s.title, s.content, s.author, st.currentStatus, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE 
+                      FROM SYAIR s JOIN STATUS st ON s.syairId = st.syairId 
+                      WHERE st.currentStatus = :status ORDER BY s.syairId DESC";
+        $reportPoems = fetchAll($sqlReport, [':status' => $reportFilter]);
+    }
+
+    $userList = fetchAll("SELECT userId, name, email, role, username, TO_CHAR(created_at, 'DD-MM-YYYY') as JOINED_DATE 
+                          FROM BASE_USER ORDER BY userId DESC");
 } catch (Exception $e) {
-    $error = "DB Error: " . $e->getMessage();
+    $swal = ['icon' => 'error', 'title' => 'Database Error', 'text' => $e->getMessage()];
 }
 ?>
 
@@ -180,6 +196,8 @@ try {
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         :root {
             --sidebar-bg: #1e1e2d;
@@ -197,40 +215,77 @@ try {
         }
 
         .sidebar {
-            width: 260px;
-            background: var(--sidebar-bg);
-            color: #9899ac;
+            width: 270px;
+            background: linear-gradient(180deg, #151526, #1f1f3a);
+            color: #b8b9d4;
             height: 100vh;
             position: fixed;
             display: flex;
             flex-direction: column;
+            padding: 15px 0;
+        }
+
+        .sidebar .logo {
+            padding: 20px 30px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .sidebar a {
-            color: #9899ac;
+            color: #b8b9d4;
             text-decoration: none;
-            padding: 12px 25px;
+            padding: 14px 22px;
+            margin: 6px 15px;
             display: flex;
             align-items: center;
-            transition: 0.2s;
+            border-radius: 10px;
+            transition: all 0.25s ease;
+            font-size: 0.95rem;
         }
 
-        .sidebar a:hover,
-        .sidebar a.active {
-            color: #fff;
-            background: #1b1b28;
-            border-left: 3px solid var(--active);
-        }
-
-        .sidebar i {
-            width: 25px;
-            margin-right: 10px;
+        .sidebar a i {
+            width: 26px;
+            margin-right: 12px;
             text-align: center;
+            font-size: 1rem;
+        }
+
+        .sidebar a:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            transform: translateX(4px);
+        }
+
+        .sidebar a.active {
+            background: linear-gradient(90deg, #3699ff, #5aa9ff);
+            color: #ffffff;
+            box-shadow: 0 6px 15px rgba(54, 153, 255, 0.35);
+        }
+
+        .sidebar .logout {
+            margin-top: auto;
+            margin-bottom: 20px;
+            color: #f64e60;
+            background: rgba(246, 78, 96, 0.1);
+            font-weight: 600;
+        }
+
+        .sidebar .logout:hover {
+            background: #f64e60;
+            color: white;
+            border-left: none;
+        }
+
+        .sidebar .logout i {
+            color: inherit;
         }
 
         .main {
-            margin-left: 260px;
-            width: calc(100% - 260px);
+            margin-left: 270px;
+            width: calc(100% - 270px);
         }
 
         .topbar {
@@ -305,6 +360,7 @@ try {
             padding: 15px 0;
             border-bottom: 1px solid #f0f0f0;
             font-size: 0.95rem;
+            vertical-align: top;
         }
 
         .status-badge {
@@ -394,23 +450,17 @@ try {
             background: #f9f9f9;
         }
 
-        .alert {
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+        /* Report Content Cell */
+        .content-cell {
+            max-width: 300px;
+            max-height: 80px;
+            overflow-y: auto;
+            display: block;
+            font-size: 0.85rem;
+            color: #666;
+            white-space: pre-wrap;
         }
 
-        .alert-success {
-            background: #c9f7f5;
-            color: #0bb7af;
-        }
-
-        .alert-error {
-            background: #ffe2e5;
-            color: #f64e60;
-        }
-
-        /* --- PRINT STYLES FOR REPORT --- */
         @media print {
 
             .sidebar,
@@ -421,7 +471,8 @@ try {
             #pending,
             #poems,
             #users,
-            .alert {
+            .alert,
+            form.filter-form {
                 display: none !important;
             }
 
@@ -448,17 +499,27 @@ try {
             table {
                 width: 100%;
                 border: 1px solid #ddd;
+                border-collapse: collapse;
             }
 
             th,
             td {
                 border: 1px solid #ddd;
                 padding: 10px;
+                color: black;
             }
 
             body {
                 background: white;
                 font-size: 12pt;
+                -webkit-print-color-adjust: exact;
+            }
+
+            .content-cell {
+                max-width: none;
+                max-height: none;
+                overflow: visible;
+                display: block;
             }
         }
     </style>
@@ -473,7 +534,8 @@ try {
         <a href="#poems"><i class="fa-solid fa-scroll"></i> Manage Poems</a>
         <a href="#users"><i class="fa-solid fa-users"></i> Users</a>
         <a href="#reports"><i class="fa-solid fa-file-alt"></i> Reports</a>
-        <a href="?logout=1" style="margin-top:auto;"><i class="fa-solid fa-power-off"></i> Logout</a>
+
+        <a href="?logout=1" class="logout"><i class="fa-solid fa-power-off"></i> Logout</a>
     </div>
 
     <div class="main">
@@ -486,8 +548,6 @@ try {
         </div>
 
         <div class="content">
-            <?php if ($message): ?><div class="alert alert-success"><?php echo $message; ?></div><?php endif; ?>
-            <?php if ($error): ?><div class="alert alert-error"><?php echo $error; ?></div><?php endif; ?>
 
             <div id="dashboard" class="stats-grid">
                 <div class="card">
@@ -518,6 +578,8 @@ try {
                     <table>
                         <thead>
                             <tr>
+                                <th>#</th>
+                                <th>ID</th>
                                 <th>Title</th>
                                 <th>Author</th>
                                 <th>Date</th>
@@ -525,8 +587,12 @@ try {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($pendingList as $row): ?>
+                            <?php
+                            $i = 1; // Counter Init
+                            foreach ($pendingList as $row): ?>
                                 <tr>
+                                    <td><?php echo $i++; ?>.</td>
+                                    <td>#<?php echo $row['SYAIRID']; ?></td>
                                     <td><?php echo htmlspecialchars($row['TITLE']); ?></td>
                                     <td><?php echo htmlspecialchars($row['AUTHOR']); ?></td>
                                     <td><?php echo $row['PUB_DATE']; ?></td>
@@ -553,6 +619,7 @@ try {
                 <table>
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>ID</th>
                             <th>Title</th>
                             <th>Author</th>
@@ -561,13 +628,18 @@ try {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($allPoemsList as $row):
+                        <?php
+                        $i = 1; // Counter Init
+                        foreach ($managePoemsList as $row):
                             $content = is_object($row['CONTENT']) ? $row['CONTENT']->load() : $row['CONTENT'];
                         ?>
                             <tr>
+                                <td><?php echo $i++; ?>.</td>
                                 <td>#<?php echo $row['SYAIRID']; ?></td>
                                 <td>
-                                    <a href="#" onclick="viewPoem('<?php echo htmlspecialchars($row['TITLE'], ENT_QUOTES); ?>', `<?php echo addslashes($content); ?>`)" style="color:#3699ff; font-weight:600;">
+                                    <input type="hidden" id="content_<?php echo $row['SYAIRID']; ?>" value="<?php echo htmlspecialchars($content); ?>">
+                                    <a href="javascript:void(0);" style="color:#3699ff; font-weight:600; text-decoration:none;"
+                                        onclick="viewPoem('<?php echo htmlspecialchars($row['TITLE'], ENT_QUOTES); ?>', `<?php echo addslashes($content); ?>`)">
                                         <?php echo htmlspecialchars($row['TITLE']); ?>
                                     </a>
                                 </td>
@@ -603,18 +675,26 @@ try {
                 <table>
                     <thead>
                         <tr>
+                            <th>#</th>
+                            <th>ID</th>
                             <th>User</th>
                             <th>Email</th>
                             <th>Role</th>
+                            <th>Joined</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($userList as $u): ?>
+                        <?php
+                        $i = 1; // Counter Init
+                        foreach ($userList as $u): ?>
                             <tr>
+                                <td><?php echo $i++; ?>.</td>
+                                <td>#<?php echo $u['USERID']; ?></td>
                                 <td><?php echo htmlspecialchars($u['NAME']); ?></td>
                                 <td><?php echo htmlspecialchars($u['EMAIL']); ?></td>
                                 <td><?php echo $u['ROLE']; ?></td>
+                                <td><?php echo $u['JOINED_DATE']; ?></td>
                                 <td>
                                     <button class="btn btn-blue" onclick="openEditUser('<?php echo $u['USERID']; ?>','<?php echo $u['NAME']; ?>','<?php echo $u['EMAIL']; ?>','<?php echo $u['ROLE']; ?>')"><i class="fa fa-pen"></i></button>
                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete user?');">
@@ -632,46 +712,95 @@ try {
             <div class="card" id="reports">
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:15px; margin-bottom:20px;">
                     <div>
-                        <h2 style="margin:0;">System Report: Syair Collection</h2>
+                        <h2 style="margin:0;">System Report</h2>
                         <small>Generated on <?php echo date('Y-m-d H:i:s'); ?> by <?php echo $_SESSION['username']; ?></small>
                     </div>
-                    <button onclick="window.print()" class="btn btn-blue no-print"><i class="fa fa-print"></i> Print Report</button>
+
+                    <form method="GET" action="#reports" class="filter-form" style="display:flex; gap:10px; align-items:center;">
+                        <select name="report_type" onchange="this.form.submit()" style="width:auto; padding:8px;">
+                            <option value="poems" <?php if ($reportType == 'poems') echo 'selected'; ?>>Poem Collection</option>
+                            <option value="users" <?php if ($reportType == 'users') echo 'selected'; ?>>User List</option>
+                        </select>
+
+                        <?php if ($reportType == 'poems'): ?>
+                            <select name="filter" onchange="this.form.submit()" style="width:auto; padding:8px;">
+                                <option value="All" <?php if ($reportFilter == 'All') echo 'selected'; ?>>All Status</option>
+                                <option value="Approved" <?php if ($reportFilter == 'Approved') echo 'selected'; ?>>Approved Only</option>
+                                <option value="Rejected" <?php if ($reportFilter == 'Rejected') echo 'selected'; ?>>Rejected Only</option>
+                                <option value="Pending" <?php if ($reportFilter == 'Pending') echo 'selected'; ?>>Pending Only</option>
+                            </select>
+                        <?php endif; ?>
+
+                        <button type="button" onclick="window.print()" class="btn btn-blue"><i class="fa fa-print"></i> Print</button>
+                    </form>
                 </div>
 
-                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px; margin-bottom:30px; text-align:center; background:#f9f9f9; padding:20px;">
-                    <div>
-                        <h1 style="margin:0; color:#3699ff;"><?php echo $countSyair; ?></h1><span>Total Poems</span>
-                    </div>
-                    <div>
-                        <h1 style="margin:0; color:#1bc5bd;"><?php echo $countApproved; ?></h1><span>Published</span>
-                    </div>
-                    <div>
-                        <h1 style="margin:0; color:#ffa800;"><?php echo $countPending; ?></h1><span>Pending Review</span>
-                    </div>
-                </div>
-
-                <table>
-                    <thead>
-                        <tr style="background:#eee;">
-                            <th>ID</th>
-                            <th>Title</th>
-                            <th>Author</th>
-                            <th>Publish Date</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($allPoemsList as $row): ?>
-                            <tr>
-                                <td>#<?php echo $row['SYAIRID']; ?></td>
-                                <td><?php echo htmlspecialchars($row['TITLE']); ?></td>
-                                <td><?php echo htmlspecialchars($row['AUTHOR']); ?></td>
-                                <td><?php echo $row['PUB_DATE']; ?></td>
-                                <td><?php echo $row['CURRENTSTATUS']; ?></td>
+                <?php if ($reportType == 'poems'): ?>
+                    <h3 class="no-print" style="margin-bottom:10px;">Poem Collection Report (<?php echo $reportFilter; ?>)</h3>
+                    <table>
+                        <thead>
+                            <tr style="background:#eee;">
+                                <th>#</th>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Content (Excerpt)</th>
+                                <th>Date</th>
+                                <th>Status</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $i = 1; // Counter Init
+                            foreach ($reportPoems as $row):
+                                $content = is_object($row['CONTENT']) ? $row['CONTENT']->load() : $row['CONTENT'];
+                            ?>
+                                <tr>
+                                    <td><?php echo $i++; ?>.</td>
+                                    <td>#<?php echo $row['SYAIRID']; ?></td>
+                                    <td><strong><?php echo htmlspecialchars($row['TITLE']); ?></strong></td>
+                                    <td><?php echo htmlspecialchars($row['AUTHOR']); ?></td>
+                                    <td>
+                                        <div class="content-cell"><?php echo htmlspecialchars($content); ?></div>
+                                    </td>
+                                    <td><?php echo $row['PUB_DATE']; ?></td>
+                                    <td><?php echo $row['CURRENTSTATUS']; ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+
+                <?php else: ?>
+                    <h3 class="no-print" style="margin-bottom:10px;">Registered Users Report</h3>
+                    <table>
+                        <thead>
+                            <tr style="background:#eee;">
+                                <th>#</th>
+                                <th>ID</th>
+                                <th>Full Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Joined Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $i = 1; // Counter Init
+                            foreach ($userList as $u): ?>
+                                <tr>
+                                    <td><?php echo $i++; ?>.</td>
+                                    <td>#<?php echo $u['USERID']; ?></td>
+                                    <td><?php echo htmlspecialchars($u['NAME']); ?></td>
+                                    <td><?php echo htmlspecialchars($u['USERNAME']); ?></td>
+                                    <td><?php echo htmlspecialchars($u['EMAIL']); ?></td>
+                                    <td><?php echo $u['ROLE']; ?></td>
+                                    <td><?php echo $u['JOINED_DATE']; ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
 
                 <div style="margin-top:50px; text-align:center; display:none;" class="show-print">
                     <p>*** End of Report ***</p>
@@ -769,6 +898,17 @@ try {
             if (e.target.className == 'modal') e.target.style.display = "none";
         }
     </script>
+
+    <?php if ($swal): ?>
+        <script>
+            Swal.fire({
+                icon: '<?php echo $swal['icon']; ?>',
+                title: '<?php echo $swal['title']; ?>',
+                text: '<?php echo $swal['text']; ?>',
+                confirmButtonColor: '#3699ff'
+            });
+        </script>
+    <?php endif; ?>
 
 </body>
 
