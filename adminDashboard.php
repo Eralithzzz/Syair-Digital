@@ -17,7 +17,7 @@ if (isset($_GET['logout'])) {
 
 $swal = null;
 
-// --- 2. BACKEND LOGIC ---
+// --- 2. BACKEND LOGIC (KEPT EXACTLY THE SAME) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // A. ADD POEM
@@ -147,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// --- 3. FETCH DATA ---
+// --- 3. DATA FETCHING ---
 try {
     $countUsers = fetchAll("SELECT COUNT(*) AS CNT FROM BASE_USER")[0]['CNT'];
     $countSyair = fetchAll("SELECT COUNT(*) AS CNT FROM SYAIR")[0]['CNT'];
@@ -193,198 +193,273 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard | Syair Digital</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         :root {
-            --sidebar-bg: #1e1e2d;
-            --active: #3699ff;
-            --bg: #f3f6f9;
-            --text: #3f4254;
+            --primary: #800000;
+            /* Maroon */
+            --accent: #ffeb3b;
+            /* Gold */
+            --bg: #f8f9fa;
+            /* Light Gray */
+            --text: #333;
+            --sidebar-width: 270px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
         }
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: var(--bg);
+            background-color: var(--bg);
             color: var(--text);
             display: flex;
-            margin: 0;
+            min-height: 100vh;
         }
 
+        /* --- SIDEBAR (Maroon Theme) --- */
         .sidebar {
-            width: 270px;
-            background: linear-gradient(180deg, #151526, #1f1f3a);
-            color: #b8b9d4;
+            width: var(--sidebar-width);
+            background-color: var(--primary);
+            color: white;
             height: 100vh;
             position: fixed;
             display: flex;
             flex-direction: column;
-            padding: 15px 0;
+            padding: 20px 0;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
         }
 
-        .sidebar .logo {
-            padding: 20px 30px;
-            font-size: 1.3rem;
+        .logo {
+            padding: 0 30px 30px;
+            font-size: 1.4rem;
             font-weight: 700;
-            color: #ffffff;
-            letter-spacing: 1px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: white;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            color: var(--accent);
+            font-size: 1.8rem;
+        }
+
+        .menu {
+            padding: 20px 15px;
+            flex-grow: 1;
+            overflow-y: auto;
         }
 
         .sidebar a {
-            color: #b8b9d4;
+            color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
-            padding: 14px 22px;
-            margin: 6px 15px;
+            padding: 14px 20px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
-            border-radius: 10px;
-            transition: all 0.25s ease;
+            border-radius: 8px;
+            transition: all 0.3s;
             font-size: 0.95rem;
+            font-weight: 500;
         }
 
         .sidebar a i {
-            width: 26px;
-            margin-right: 12px;
+            width: 30px;
+            font-size: 1.1rem;
             text-align: center;
-            font-size: 1rem;
         }
 
-        .sidebar a:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: #ffffff;
-            transform: translateX(4px);
-        }
-
+        .sidebar a:hover,
         .sidebar a.active {
-            background: linear-gradient(90deg, #3699ff, #5aa9ff);
-            color: #ffffff;
-            box-shadow: 0 6px 15px rgba(54, 153, 255, 0.35);
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--accent);
+            padding-left: 25px;
+            /* Slide effect */
         }
 
+        /* Logout Button */
         .sidebar .logout {
             margin-top: auto;
             margin-bottom: 20px;
-            color: #f64e60;
-            background: rgba(246, 78, 96, 0.1);
-            font-weight: 600;
+            color: #ffcccc;
+            background: rgba(0, 0, 0, 0.2);
         }
 
         .sidebar .logout:hover {
-            background: #f64e60;
+            background: #b30000;
             color: white;
-            border-left: none;
         }
 
-        .sidebar .logout i {
-            color: inherit;
-        }
-
+        /* --- MAIN CONTENT --- */
         .main {
-            margin-left: 270px;
-            width: calc(100% - 270px);
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            display: flex;
+            flex-direction: column;
         }
 
+        /* Topbar */
         .topbar {
             height: 70px;
-            background: #fff;
+            background: white;
             display: flex;
             justify-content: flex-end;
             align-items: center;
-            padding: 0 30px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.02);
+            padding: 0 40px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.03);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
 
         .avatar {
-            width: 40px;
-            height: 40px;
-            background: #e1f0ff;
-            color: var(--active);
-            border-radius: 6px;
+            width: 45px;
+            height: 45px;
+            background: var(--primary);
+            color: var(--accent);
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            margin-left: 15px;
+            font-size: 1.2rem;
+            border: 2px solid var(--accent);
         }
 
         .content {
-            padding: 30px;
+            padding: 40px;
         }
 
+        /* --- STATS CARDS --- */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
         }
 
-        .card {
-            background: #fff;
+        .stat-card {
+            background: white;
             padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.02);
-            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.3s;
+            border-left: 4px solid var(--primary);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-info h3 {
+            font-size: 2rem;
+            margin: 0;
+            color: var(--primary);
+        }
+
+        .stat-info p {
+            margin: 0;
+            color: #777;
+            font-size: 0.9rem;
+            font-weight: 500;
         }
 
         .stat-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            float: right;
+            font-size: 2.5rem;
+            color: #eee;
         }
 
+        /* --- CONTENT CARDS (Tables) --- */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            border: 1px solid #eee;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        /* --- TABLES --- */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
         }
 
         th {
             text-align: left;
-            color: #b5b5c3;
-            font-size: 0.8rem;
+            color: #888;
+            font-size: 0.85rem;
+            font-weight: 600;
             text-transform: uppercase;
-            padding: 15px 0;
-            border-bottom: 1px solid #f0f0f0;
+            padding: 15px 10px;
+            border-bottom: 2px solid #f0f0f0;
         }
 
         td {
-            padding: 15px 0;
+            padding: 15px 10px;
             border-bottom: 1px solid #f0f0f0;
             font-size: 0.95rem;
-            vertical-align: top;
+            color: #444;
+            vertical-align: middle;
         }
 
         .status-badge {
-            padding: 5px 12px;
+            padding: 6px 12px;
             border-radius: 6px;
             font-size: 0.75rem;
             font-weight: 600;
+            display: inline-block;
         }
 
         .status-pending {
-            background: #fff4de;
-            color: #ffa800;
+            background: #fff8e1;
+            color: #ffa000;
         }
 
         .status-approved {
-            background: #c9f7f5;
-            color: #1bc5bd;
+            background: #e8f5e9;
+            color: #2e7d32;
         }
 
         .status-rejected {
-            background: #ffe2e5;
-            color: #f64e60;
+            background: #ffebee;
+            color: #c62828;
         }
 
+        /* --- BUTTONS --- */
         .btn {
             padding: 8px 15px;
             border-radius: 6px;
@@ -393,64 +468,132 @@ try {
             font-size: 0.85rem;
             margin-right: 5px;
             color: #fff;
+            font-weight: 500;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            box-shadow: 0 4px 10px rgba(128, 0, 0, 0.2);
         }
 
         .btn-green {
-            background: #1bc5bd;
+            background: #2e7d32;
         }
 
         .btn-red {
-            background: #f64e60;
+            background: #c62828;
         }
 
         .btn-blue {
-            background: #3699ff;
+            background: #1565c0;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 999;
-            left: 0;
-            top: 0;
+        /* --- FORMS & INPUTS --- */
+        input,
+        select,
+        textarea {
             width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            background: #f9f9f9;
+            outline: none;
+            transition: 0.3s;
+            font-family: 'Poppins', sans-serif;
         }
 
-        .modal-content {
+        input:focus,
+        select:focus,
+        textarea:focus {
             background: #fff;
-            margin: 5% auto;
-            padding: 25px;
-            width: 500px;
-            border-radius: 10px;
-            max-height: 90vh;
-            overflow-y: auto;
+            border-color: var(--primary);
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
+            color: #555;
         }
 
-        input,
-        textarea,
-        select {
+        /* --- MODAL --- */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
             width: 100%;
-            padding: 10px;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            box-sizing: border-box;
-            background: #f9f9f9;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
         }
 
-        /* Report Content Cell */
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 40px;
+            border-radius: 15px;
+            width: 500px;
+            max-width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #aaa;
+            transition: 0.3s;
+        }
+
+        .close:hover {
+            color: var(--primary);
+        }
+
+        /* View Poem Specifics */
+        #v_title {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin: 0 0 10px;
+            border-bottom: 2px solid var(--accent);
+            display: inline-block;
+        }
+
+        #v_content {
+            font-family: 'Georgia', serif;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #444;
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+
         .content-cell {
             max-width: 300px;
             max-height: 80px;
@@ -528,52 +671,67 @@ try {
 <body>
 
     <div class="sidebar">
-        <div style="padding:20px 25px; color:#fff; font-weight:bold; font-size:1.2rem;">SYAIR ADMIN</div>
-        <a href="#dashboard" class="active"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
-        <a href="#pending"><i class="fa-solid fa-inbox"></i> Approvals <?php if ($countPending > 0) echo "($countPending)"; ?></a>
-        <a href="#poems"><i class="fa-solid fa-scroll"></i> Manage Poems</a>
-        <a href="#users"><i class="fa-solid fa-users"></i> Users</a>
-        <a href="#reports"><i class="fa-solid fa-file-alt"></i> Reports</a>
+        <div class="logo">
+            <i class="fas fa-user-shield"></i>
+            <span>Admin Panel</span>
+        </div>
+        <div class="menu">
+            <a href="#dashboard" class="active"><i class="fas fa-th-large"></i> Dashboard</a>
+            <a href="#pending"><i class="fas fa-inbox"></i> Approvals <?php if ($countPending > 0) echo "<span style='background:var(--accent); color:var(--primary); padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-left:auto;'>$countPending</span>"; ?></a>
+            <a href="#poems"><i class="fas fa-scroll"></i> Manage Poems</a>
+            <a href="#users"><i class="fas fa-users"></i> Users</a>
+            <a href="#reports"><i class="fas fa-file-alt"></i> Reports</a>
 
-        <a href="?logout=1" class="logout"><i class="fa-solid fa-power-off"></i> Logout</a>
+            <a href="?logout=1" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
     </div>
 
     <div class="main">
         <div class="topbar">
-            <div style="text-align:right;">
-                <strong><?php echo $_SESSION['username']; ?></strong><br>
-                <small style="color:#b5b5c3;">Administrator</small>
+            <div class="user-profile">
+                <div style="text-align: right;">
+                    <div style="font-weight: 600; font-size: 0.9rem;"><?php echo htmlspecialchars(ucfirst($_SESSION['username'])); ?></div>
+                    <div style="font-size: 0.75rem; color: #888;"><?php echo htmlspecialchars($_SESSION['email']); ?></div>
+                </div>
+                <div class="avatar"><?php echo strtoupper(substr($_SESSION['username'], 0, 1)); ?></div>
             </div>
-            <div class="avatar"><?php echo strtoupper(substr($_SESSION['username'], 0, 1)); ?></div>
         </div>
 
         <div class="content">
 
             <div id="dashboard" class="stats-grid">
-                <div class="card">
-                    <div class="stat-icon" style="background:#e1f0ff; color:#3699ff;"><i class="fa-solid fa-users"></i></div>
-                    <h3><?php echo $countUsers; ?></h3>
-                    <p>Users</p>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3><?php echo $countUsers; ?></h3>
+                        <p>Total Users</p>
+                    </div>
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
                 </div>
-                <div class="card">
-                    <div class="stat-icon" style="background:#e1e9ff; color:#6993ff;"><i class="fa-solid fa-scroll"></i></div>
-                    <h3><?php echo $countSyair; ?></h3>
-                    <p>Poems</p>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3><?php echo $countSyair; ?></h3>
+                        <p>Total Poems</p>
+                    </div>
+                    <div class="stat-icon"><i class="fas fa-scroll"></i></div>
                 </div>
-                <div class="card">
-                    <div class="stat-icon" style="background:#fff4de; color:#ffa800;"><i class="fa-solid fa-clock"></i></div>
-                    <h3><?php echo $countPending; ?></h3>
-                    <p>Pending</p>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3><?php echo $countPending; ?></h3>
+                        <p>Pending</p>
+                    </div>
+                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
                 </div>
-                <div class="card">
-                    <div class="stat-icon" style="background:#c9f7f5; color:#1bc5bd;"><i class="fa-solid fa-check"></i></div>
-                    <h3><?php echo $countApproved; ?></h3>
-                    <p>Approved</p>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3><?php echo $countApproved; ?></h3>
+                        <p>Approved</p>
+                    </div>
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
                 </div>
             </div>
 
             <div class="card" id="pending">
-                <h3>Pending Approvals</h3>
+                <div class="section-header"><span class="section-title">Pending Approvals</span></div>
                 <?php if (count($pendingList) > 0): ?>
                     <table>
                         <thead>
@@ -587,11 +745,10 @@ try {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php
-                            $i = 1; // Counter Init
+                            <?php $i = 1;
                             foreach ($pendingList as $row): ?>
                                 <tr>
-                                    <td><?php echo $i++; ?>.</td>
+                                    <td><?php echo $i++; ?></td>
                                     <td>#<?php echo $row['SYAIRID']; ?></td>
                                     <td><?php echo htmlspecialchars($row['TITLE']); ?></td>
                                     <td><?php echo htmlspecialchars($row['AUTHOR']); ?></td>
@@ -600,21 +757,21 @@ try {
                                         <form method="POST" style="display:inline;">
                                             <input type="hidden" name="action_type" value="update_status">
                                             <input type="hidden" name="syair_id" value="<?php echo $row['SYAIRID']; ?>">
-                                            <button name="status" value="Approved" class="btn btn-green"><i class="fa fa-check"></i></button>
-                                            <button name="status" value="Rejected" class="btn btn-red"><i class="fa fa-times"></i></button>
+                                            <button name="status" value="Approved" class="btn btn-green" title="Approve"><i class="fa fa-check"></i></button>
+                                            <button name="status" value="Rejected" class="btn btn-red" title="Reject"><i class="fa fa-times"></i></button>
                                         </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                <?php else: ?><p>No pending approvals.</p><?php endif; ?>
+                <?php else: ?><p style="color:#777; text-align:center;">No pending approvals.</p><?php endif; ?>
             </div>
 
             <div class="card" id="poems">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3>Manage Poems</h3>
-                    <button onclick="document.getElementById('addPoemModal').style.display='block'" class="btn btn-blue">+ Add Poem</button>
+                <div class="section-header">
+                    <span class="section-title">Manage Poems</span>
+                    <button onclick="document.getElementById('addPoemModal').style.display='block'" class="btn btn-primary">+ Add Poem</button>
                 </div>
                 <table>
                     <thead>
@@ -628,17 +785,16 @@ try {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php
-                        $i = 1; // Counter Init
+                        <?php $i = 1;
                         foreach ($managePoemsList as $row):
                             $content = is_object($row['CONTENT']) ? $row['CONTENT']->load() : $row['CONTENT'];
                         ?>
                             <tr>
-                                <td><?php echo $i++; ?>.</td>
+                                <td><?php echo $i++; ?></td>
                                 <td>#<?php echo $row['SYAIRID']; ?></td>
                                 <td>
                                     <input type="hidden" id="content_<?php echo $row['SYAIRID']; ?>" value="<?php echo htmlspecialchars($content); ?>">
-                                    <a href="javascript:void(0);" style="color:#3699ff; font-weight:600; text-decoration:none;"
+                                    <a href="javascript:void(0);" style="color:var(--primary); font-weight:600; text-decoration:none;"
                                         onclick="viewPoem('<?php echo htmlspecialchars($row['TITLE'], ENT_QUOTES); ?>', `<?php echo addslashes($content); ?>`)">
                                         <?php echo htmlspecialchars($row['TITLE']); ?>
                                     </a>
@@ -668,9 +824,9 @@ try {
             </div>
 
             <div class="card" id="users">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3>User Management</h3>
-                    <button onclick="document.getElementById('addUserModal').style.display='block'" class="btn btn-blue">+ Add User</button>
+                <div class="section-header">
+                    <span class="section-title">User Management</span>
+                    <button onclick="document.getElementById('addUserModal').style.display='block'" class="btn btn-primary">+ Add User</button>
                 </div>
                 <table>
                     <thead>
@@ -685,11 +841,10 @@ try {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php
-                        $i = 1; // Counter Init
+                        <?php $i = 1;
                         foreach ($userList as $u): ?>
                             <tr>
-                                <td><?php echo $i++; ?>.</td>
+                                <td><?php echo $i++; ?></td>
                                 <td>#<?php echo $u['USERID']; ?></td>
                                 <td><?php echo htmlspecialchars($u['NAME']); ?></td>
                                 <td><?php echo htmlspecialchars($u['EMAIL']); ?></td>
@@ -710,20 +865,20 @@ try {
             </div>
 
             <div class="card" id="reports">
-                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:15px; margin-bottom:20px;">
+                <div class="section-header">
                     <div>
-                        <h2 style="margin:0;">System Report</h2>
-                        <small>Generated on <?php echo date('Y-m-d H:i:s'); ?> by <?php echo $_SESSION['username']; ?></small>
+                        <span class="section-title">System Report</span><br>
+                        <small style="color:#888;">Generated on <?php echo date('d M Y, H:i'); ?> by <?php echo ucfirst($_SESSION['username']); ?></small>
                     </div>
 
                     <form method="GET" action="#reports" class="filter-form" style="display:flex; gap:10px; align-items:center;">
-                        <select name="report_type" onchange="this.form.submit()" style="width:auto; padding:8px;">
+                        <select name="report_type" onchange="this.form.submit()" style="width:auto;">
                             <option value="poems" <?php if ($reportType == 'poems') echo 'selected'; ?>>Poem Collection</option>
                             <option value="users" <?php if ($reportType == 'users') echo 'selected'; ?>>User List</option>
                         </select>
 
                         <?php if ($reportType == 'poems'): ?>
-                            <select name="filter" onchange="this.form.submit()" style="width:auto; padding:8px;">
+                            <select name="filter" onchange="this.form.submit()" style="width:auto;">
                                 <option value="All" <?php if ($reportFilter == 'All') echo 'selected'; ?>>All Status</option>
                                 <option value="Approved" <?php if ($reportFilter == 'Approved') echo 'selected'; ?>>Approved Only</option>
                                 <option value="Rejected" <?php if ($reportFilter == 'Rejected') echo 'selected'; ?>>Rejected Only</option>
@@ -731,15 +886,15 @@ try {
                             </select>
                         <?php endif; ?>
 
-                        <button type="button" onclick="window.print()" class="btn btn-blue"><i class="fa fa-print"></i> Print</button>
+                        <button type="button" onclick="window.print()" class="btn btn-primary"><i class="fa fa-print"></i> Print</button>
                     </form>
                 </div>
 
                 <?php if ($reportType == 'poems'): ?>
-                    <h3 class="no-print" style="margin-bottom:10px;">Poem Collection Report (<?php echo $reportFilter; ?>)</h3>
+                    <h4 class="no-print" style="margin-bottom:15px; color:#555;">Poem Collection Report (<?php echo $reportFilter; ?>)</h4>
                     <table>
                         <thead>
-                            <tr style="background:#eee;">
+                            <tr style="background:#f9f9f9;">
                                 <th>#</th>
                                 <th>ID</th>
                                 <th>Title</th>
@@ -750,13 +905,10 @@ try {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php
-                            $i = 1; // Counter Init
-                            foreach ($reportPoems as $row):
-                                $content = is_object($row['CONTENT']) ? $row['CONTENT']->load() : $row['CONTENT'];
-                            ?>
+                            <?php $i = 1;
+                            foreach ($reportPoems as $row): $content = is_object($row['CONTENT']) ? $row['CONTENT']->load() : $row['CONTENT']; ?>
                                 <tr>
-                                    <td><?php echo $i++; ?>.</td>
+                                    <td><?php echo $i++; ?></td>
                                     <td>#<?php echo $row['SYAIRID']; ?></td>
                                     <td><strong><?php echo htmlspecialchars($row['TITLE']); ?></strong></td>
                                     <td><?php echo htmlspecialchars($row['AUTHOR']); ?></td>
@@ -769,12 +921,11 @@ try {
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-
                 <?php else: ?>
-                    <h3 class="no-print" style="margin-bottom:10px;">Registered Users Report</h3>
+                    <h4 class="no-print" style="margin-bottom:15px; color:#555;">Registered Users Report</h4>
                     <table>
                         <thead>
-                            <tr style="background:#eee;">
+                            <tr style="background:#f9f9f9;">
                                 <th>#</th>
                                 <th>ID</th>
                                 <th>Full Name</th>
@@ -785,11 +936,10 @@ try {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php
-                            $i = 1; // Counter Init
+                            <?php $i = 1;
                             foreach ($userList as $u): ?>
                                 <tr>
-                                    <td><?php echo $i++; ?>.</td>
+                                    <td><?php echo $i++; ?></td>
                                     <td>#<?php echo $u['USERID']; ?></td>
                                     <td><?php echo htmlspecialchars($u['NAME']); ?></td>
                                     <td><?php echo htmlspecialchars($u['USERNAME']); ?></td>
@@ -817,7 +967,7 @@ try {
                 <div class="form-group"><label>Title</label><input type="text" name="title" required></div>
                 <div class="form-group"><label>Author</label><input type="text" name="author" required></div>
                 <div class="form-group"><label>Date</label><input type="date" name="publish_date" required></div>
-                <div class="form-group"><label>Content</label><textarea name="content" rows="6" required></textarea></div><button class="btn btn-green" style="width:100%">Post</button>
+                <div class="form-group"><label>Content</label><textarea name="content" rows="6" required></textarea></div><button class="btn btn-primary" style="width:100%">Post</button>
             </form>
         </div>
     </div>
@@ -829,7 +979,7 @@ try {
                 <div class="form-group"><label>Title</label><input type="text" name="edit_title" id="ep_title" required></div>
                 <div class="form-group"><label>Author</label><input type="text" name="edit_author" id="ep_author" required></div>
                 <div class="form-group"><label>Date</label><input type="date" name="edit_date" id="ep_date" required></div>
-                <div class="form-group"><label>Content</label><textarea name="edit_content" id="ep_content" rows="6" required></textarea></div><button class="btn btn-blue" style="width:100%">Update</button>
+                <div class="form-group"><label>Content</label><textarea name="edit_content" id="ep_content" rows="6" required></textarea></div><button class="btn btn-primary" style="width:100%">Update</button>
             </form>
         </div>
     </div>
@@ -837,7 +987,7 @@ try {
     <div id="viewModal" class="modal">
         <div class="modal-content"><span class="close" onclick="this.parentElement.parentElement.style.display='none'">&times;</span>
             <h2 id="v_title"></h2>
-            <div id="v_content" style="white-space: pre-line;"></div>
+            <div id="v_content"></div>
         </div>
     </div>
 
@@ -852,7 +1002,7 @@ try {
                 <div class="form-group"><label>Role</label><select name="role">
                         <option>Users</option>
                         <option>Admin</option>
-                    </select></div><button class="btn btn-green" style="width:100%">Create</button>
+                    </select></div><button class="btn btn-primary" style="width:100%">Create</button>
             </form>
         </div>
     </div>
@@ -866,7 +1016,7 @@ try {
                 <div class="form-group"><label>Role</label><select name="edit_role" id="eu_role">
                         <option>Users</option>
                         <option>Admin</option>
-                    </select></div><button class="btn btn-blue" style="width:100%">Update</button>
+                    </select></div><button class="btn btn-primary" style="width:100%">Update</button>
             </form>
         </div>
     </div>
@@ -905,7 +1055,7 @@ try {
                 icon: '<?php echo $swal['icon']; ?>',
                 title: '<?php echo $swal['title']; ?>',
                 text: '<?php echo $swal['text']; ?>',
-                confirmButtonColor: '#3699ff'
+                confirmButtonColor: '#800000'
             });
         </script>
     <?php endif; ?>
