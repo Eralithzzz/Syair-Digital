@@ -84,3 +84,24 @@ CREATE SEQUENCE liked_seq START WITH 1 INCREMENT BY 1;
 
 ALTER TABLE BASE_USER ADD created_at DATE DEFAULT SYSDATE;
 ALTER TABLE SYAIR ADD created_at DATE DEFAULT SYSDATE;
+
+DECLARE
+    v_userId NUMBER;
+BEGIN
+    INSERT INTO BASE_USER (userId, email, name, username, password, role)
+    VALUES (
+        baseuser_seq.NEXTVAL, 
+        'admin1@gmail.com', 
+        'Admin User', 
+        'admin1', 
+        '$2y$10$SHA.sz6dsk9EZ18Z/Uh7Bu6TmKfGisY13n8i6mvoWM0QxJKNVFqaS',
+        'Admin'
+    )
+    RETURNING userId INTO v_userId;
+    
+    INSERT INTO ADMIN (userId)
+    VALUES (v_userId);
+    
+    COMMIT;
+END;
+/
