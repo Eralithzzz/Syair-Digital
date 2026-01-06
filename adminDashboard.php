@@ -731,7 +731,7 @@ try {
             </div>
 
             <div class="card" id="pending">
-                <div class="section-header"><span class="section-title">Pending Approvals</span></div>
+                <h3>Pending Approvals</h3>
                 <?php if (count($pendingList) > 0): ?>
                     <table>
                         <thead>
@@ -745,27 +745,37 @@ try {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php $i = 1;
-                            foreach ($pendingList as $row): ?>
+                            <?php
+                            $i = 1; // Counter Init
+                            foreach ($pendingList as $row):
+                                $content = is_object($row['CONTENT']) ? $row['CONTENT']->load() : $row['CONTENT'];
+                            ?>
                                 <tr>
                                     <td><?php echo $i++; ?></td>
                                     <td>#<?php echo $row['SYAIRID']; ?></td>
-                                    <td><?php echo htmlspecialchars($row['TITLE']); ?></td>
+                                    <td>
+                                        <input type="hidden" id="pending_content_<?php echo $row['SYAIRID']; ?>" value="<?php echo htmlspecialchars($content); ?>">
+
+                                        <a href="javascript:void(0);" style="color:#3699ff; font-weight:600; text-decoration:none;"
+                                            onclick="viewPoem('<?php echo htmlspecialchars($row['TITLE'], ENT_QUOTES); ?>', document.getElementById('pending_content_<?php echo $row['SYAIRID']; ?>').value)">
+                                            <?php echo htmlspecialchars($row['TITLE']); ?>
+                                        </a>
+                                    </td>
                                     <td><?php echo htmlspecialchars($row['AUTHOR']); ?></td>
                                     <td><?php echo $row['PUB_DATE']; ?></td>
                                     <td>
                                         <form method="POST" style="display:inline;">
                                             <input type="hidden" name="action_type" value="update_status">
                                             <input type="hidden" name="syair_id" value="<?php echo $row['SYAIRID']; ?>">
-                                            <button name="status" value="Approved" class="btn btn-green" title="Approve"><i class="fa fa-check"></i></button>
-                                            <button name="status" value="Rejected" class="btn btn-red" title="Reject"><i class="fa fa-times"></i></button>
+                                            <button name="status" value="Approved" class="btn btn-green"><i class="fa fa-check"></i></button>
+                                            <button name="status" value="Rejected" class="btn btn-red"><i class="fa fa-times"></i></button>
                                         </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                <?php else: ?><p style="color:#777; text-align:center;">No pending approvals.</p><?php endif; ?>
+                <?php else: ?><p>No pending approvals.</p><?php endif; ?>
             </div>
 
             <div class="card" id="poems">
