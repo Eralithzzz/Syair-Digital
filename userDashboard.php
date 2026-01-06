@@ -197,7 +197,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <body>
 <header>
-    <h1>Syair Digital</h1>
+        <div class="logo">
+        <i class="fa-solid fa-user-circle user-icon" onclick="toggleUserMenu()"></i>
+        <span class="username"><?= htmlspecialchars($username) ?></span>
+
+        <div id="userMenu" class="user-menu">
+            <a href="editProfile.php">
+                <i class="fa-solid fa-user-gear"></i> Edit Profile
+            </a>
+            <a href="logout.php">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </a>
+        </div>
+    </div>
     <nav>
         <a href="#" onclick="showTab('home')">
             <i class="fa-solid fa-house"></i> Homepage
@@ -217,14 +229,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <a href="#" onclick="showTab('liked')">
             <i class="fa-solid fa-heart"></i> Liked
-        </a>
-
-        <a href="editProfile.php">
-            <i class="fa-solid fa-user-gear"></i> Edit Profile
-        </a>
-
-        <a href="logout.php">
-            <i class="fa-solid fa-right-from-bracket"></i> Logout
         </a>
     </nav>
 </header>
