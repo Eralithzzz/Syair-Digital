@@ -2,24 +2,39 @@
 session_start();
 require_once 'oracle.php';
 
-$userId = $_SESSION['user_id'];
-$syairId = $_GET['id'];
-
-$sql = "SELECT 1 FROM BOOKMARK WHERE userId = :u AND syairId = :s";
-$stmt = oci_parse($db_conn, $sql);
-oci_bind_by_name($stmt, ':u', $userId);
-oci_bind_by_name($stmt, ':s', $syairId);
-oci_execute($stmt);
-
-if (oci_fetch($stmt)) {
-    $sql = "DELETE FROM BOOKMARK WHERE userId = :u AND syairId = :s";
-} else {
-    $sql = "INSERT INTO BOOKMARK VALUES (bookmark_seq.NEXTVAL, :u, :s, SYSTIMESTAMP)";
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(403);
+    echo "Not logged in";
+    exit;
 }
 
-$stmt = oci_parse($db_conn, $sql);
-oci_bind_by_name($stmt, ':u', $userId);
-oci_bind_by_name($stmt, ':s', $syairId);
-oci_execute($stmt);
+$userId = $_SESSION['user_id'];
+$syairId = intval($_GET['id'] ?? 0);
+if (!$syairId) { echo "Invalid ID"; exit; }
 
-header("Location: " . $_SERVER['HTTP_REFERER']);
+// Check if already bookmark
+$checkSql = "SELECT COUNT(*) AS CNT FROM BOOKMARK WHERE userId = :userId AND syairId = :syairId";
+$stmt = oci_parse($db_conn, $checkSql);
+oci_bind_by_name($stmt, ':userId', $userId);
+oci_bind_by_name($stmt, ':syairId', $syairId);
+oci_execute($stmt);
+$row = oci_fetch_assoc($stmt);
+
+if ($row['CNT'] > 0) {
+    // Already bookmarked, remove it
+    $delSql = "DELETE FROM BOOKMARK WHERE userId = :userId AND syairId = :syairId";
+    $stmt = oci_parse($db_conn, $delSql);
+    oci_bind_by_name($stmt, ':userId', $userId);
+    oci_bind_by_name($stmt, ':syairId', $syairId);
+    oci_execute($stmt);
+    echo json_encode(['status' => 'removed']); // <-- match JS
+} else {
+    // Not bookmarked, insert
+    $insSql = "INSERT INTO BOOKMARK(bookmarkId, userId, syairId, dateBookmark) VALUES (bookmark_seq.NEXTVAL, :userId, :syairId, SYSTIMESTAMP)";
+    $stmt = oci_parse($db_conn, $insSql);
+    oci_bind_by_name($stmt, ':userId', $userId);
+    oci_bind_by_name($stmt, ':syairId', $syairId);
+    oci_execute($stmt);
+    echo json_encode(['status' => 'bookmarked']); // <-- also match JS
+}
+

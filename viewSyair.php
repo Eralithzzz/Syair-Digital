@@ -8,7 +8,7 @@ if (!isset($_GET['id'])) {
 }
 
 $syairId = $_GET['id'];
-$fromTab = isset($_GET['from']) ? $_GET['from'] : 'home'; // default ke homepage
+$fromTab = isset($_GET['from']) ? $_GET['from'] : 'home';
 
 $sql = "
 SELECT s.title, s.author, s.content, TO_CHAR(s.yearPublish,'YYYY') year
@@ -28,51 +28,89 @@ if (!$syair) {
     exit();
 }
 
-// Handle CLOB content
 if ($syair['CONTENT'] instanceof OCILob) {
     $syair['CONTENT'] = $syair['CONTENT']->load();
 }
 
-// Tentukan redirect link untuk back button
 $backLink = "userDashboard.php";
 if (in_array($fromTab, ['home','mySyair','liked','bookmark'])) {
     $backLink .= "#$fromTab";
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= htmlspecialchars($syair['TITLE']) ?></title>
 <style>
-body { background:#f8f9fa; font-family:Arial, sans-serif; }
-.container {
-    max-width:800px;
-    margin:40px auto;
-    background:white;
-    padding:30px;
-    border-radius:15px;
+body {
+    background: #f0f2f5;
+    font-family: "Poppins", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
 }
-h1 { color:#800000; margin-bottom:10px; }
-p { margin-bottom:20px; }
+
+.container {
+    max-width: 900px;
+    width: 90%;
+    margin: 40px auto;
+    background: #fff;
+    padding: 30px 40px;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+h1 {
+    color: #800000;
+    margin-bottom: 10px;
+    font-size: 2rem;
+}
+
+.meta {
+    color: #555;
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+}
+
 pre {
     white-space: pre-wrap;
-    font-size:16px;
-    line-height:1.7;
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #333;
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
 }
+
 a.button-back {
-    display:inline-block;
-    padding:8px 15px;
-    background:#800000;
-    color:white;
-    text-decoration:none;
-    border-radius:5px;
-    font-weight:600;
-    transition:0.3s;
+    display: inline-block;
+    padding: 10px 18px;
+    background: #800000;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 600;
+    transition: 0.3s;
 }
+
 a.button-back:hover {
-    background:#660000;
+    background: #660000;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 20px 15px;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    pre {
+        font-size: 0.95rem;
+    }
 }
 </style>
 </head>
@@ -80,7 +118,7 @@ a.button-back:hover {
 
 <div class="container">
     <h1><?= htmlspecialchars($syair['TITLE']) ?></h1>
-    <p><b>Author:</b> <?= htmlspecialchars($syair['AUTHOR']) ?> | <?= $syair['YEAR'] ?></p>
+    <div class="meta"><b>Author:</b> <?= htmlspecialchars($syair['AUTHOR']) ?> | <?= $syair['YEAR'] ?></div>
     <hr>
     <pre><?= htmlspecialchars($syair['CONTENT']) ?></pre>
     <br>
