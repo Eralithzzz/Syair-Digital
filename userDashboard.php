@@ -99,6 +99,8 @@ $likedSyair = [];
 while ($row = oci_fetch_assoc($stmt)) {
     $likedSyair[] = $row;
 }
+$likeClass = (isset($s['ISLIKED']) && $s['ISLIKED']) ? 'active' : '';
+$bookmarkClass = (isset($s['ISBOOKMARKED']) && $s['ISBOOKMARKED']) ? 'active' : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -186,6 +188,10 @@ function showTab(tab){
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     document.getElementById(tab).classList.add('active');
 }
+document.addEventListener('DOMContentLoaded', () => {
+    const hash = window.location.hash.replace('#','');
+    if(hash) showTab(hash);
+});
 </script>
 </head>
 
@@ -225,45 +231,44 @@ function showTab(tab){
 
 <div class="container">
 
-    <!-- HOMEPAGE -->
-    <div id="home" class="tab active">
-        <h2>Homepage</h2>
-        <?php if(!$homepageSyair): ?>
+<!-- HOMEPAGE -->
+<div id="home" class="tab active">
+    <h2>Homepage</h2>
+    <?php if(!$homepageSyair): ?>
         <p>No approved syair yet.</p>
-        <?php else: ?>
-        <table class="table">
-            <tr><th>Title</th><th>Author</th><th>Year</th></tr>
-            <?php foreach($homepageSyair as $s): ?>
-            <tr>
-                <td><?= htmlspecialchars($s['TITLE']) ?></td>
-                <td><?= htmlspecialchars($s['AUTHOR']) ?></td>
-                <td><?= htmlspecialchars($s['YEARPUBLISH']) ?></td>
-                <td>
-                    <!-- VIEW -->
-                    <a class="btn-view" href="viewSyair.php?id=<?= $s['SYAIRID'] ?>" title="View Syair">
-                        <i class="fa-solid fa-eye"></i>
-                    </a>
+    <?php else: ?>
+    <table class="table">
+        <tr><th>Title</th><th>Author</th><th>Year</th><th>Actions</th></tr>
+        <?php foreach($homepageSyair as $s): ?>
+        <tr>
+            <td><?= htmlspecialchars($s['TITLE']) ?></td>
+            <td><?= htmlspecialchars($s['AUTHOR']) ?></td>
+            <td><?= htmlspecialchars($s['YEARPUBLISH']) ?></td>
+            <td>
+                <!-- VIEW -->
+                <a class="btn-view" href="viewSyair.php?id=<?= $s['SYAIRID'] ?>&from=home">
+                    <i class="fa-solid fa-eye"></i>
+                </a>
 
-                    <!-- LIKE -->
-                    <a class="btn-like <?= $s['ISLIKED'] ? 'active' : '' ?>"
-                    href="liked.php?id=<?= $s['SYAIRID'] ?>"
-                    title="Like">
-                        <i class="fa-solid fa-heart"></i>
-                    </a>
+                <!-- LIKE -->
+                <a class="btn-like <?= isset($s['ISLIKED']) && $s['ISLIKED'] ? 'active' : '' ?>"
+                   href="liked.php?id=<?= $s['SYAIRID'] ?>"
+                   title="Like">
+                    <i class="fa-solid fa-heart"></i>
+                </a>
 
-                    <!-- BOOKMARK -->
-                    <a class="btn-bookmark <?= $s['ISBOOKMARKED'] ? 'active' : '' ?>"
-                    href="bookmark.php?id=<?= $s['SYAIRID'] ?>"
-                    title="Bookmark">
-                        <i class="fa-solid fa-bookmark"></i>
-                    </a>
-                </td>
-
-            </tr>
-            <?php endforeach;?>
-        </table>
-        <?php endif;?>
-    </div>
+                <!-- BOOKMARK -->
+                <a class="btn-bookmark <?= isset($s['ISBOOKMARKED']) && $s['ISBOOKMARKED'] ? 'active' : '' ?>"
+                   href="bookmark.php?id=<?= $s['SYAIRID'] ?>"
+                   title="Bookmark">
+                    <i class="fa-solid fa-bookmark"></i>
+                </a>
+            </td>
+        </tr>
+        <?php endforeach;?>
+    </table>
+    <?php endif;?>
+</div>
 
     <!-- MY ADDED SYAIR -->
     <div id="mySyair" class="tab">
@@ -286,43 +291,68 @@ function showTab(tab){
     </div>
 
     <!-- BOOKMARK -->
-    <div id="bookmark" class="tab">
-        <h2>Bookmarked Syair</h2>
-        <?php if(!$bookmarkedSyair): ?>
-            <p>No bookmarks yet.</p>
-            <?php else: ?>
-            <table class="table">
-                <tr><th>Title</th><th>Author</th><th>Year</th></tr>
-                <?php foreach($bookmarkedSyair as $s): ?>
-                <tr>
-                    <td><?=$s['TITLE']?></td>
-                    <td><?=$s['AUTHOR']?></td>
-                    <td><?=$s['YEARPUBLISH']?></td>
-                </tr>
-                <?php endforeach;?>
-            </table>
-        <?php endif;?>
-    </div>
+<div id="bookmark" class="tab">
+    <h2>Bookmarked Syair</h2>
+    <?php if(!$bookmarkedSyair): ?>
+        <p>No bookmarks yet.</p>
+    <?php else: ?>
+    <table class="table">
+        <tr><th>Title</th><th>Author</th><th>Year</th><th>Actions</th></tr>
+        <?php foreach($bookmarkedSyair as $s): ?>
+        <tr>
+            <td><?= htmlspecialchars($s['TITLE']) ?></td>
+            <td><?= htmlspecialchars($s['AUTHOR']) ?></td>
+            <td><?= htmlspecialchars($s['YEARPUBLISH']) ?></td>
+            <td>
+                <!-- VIEW -->
+                <a class="btn-view" href="viewSyair.php?id=<?= $s['SYAIRID'] ?>&from=bookmark">
+                    <i class="fa-solid fa-eye"></i>
+                </a>
 
-    <!-- LIKED -->
-    <div id="liked" class="tab">
-        <h2>Liked Syair</h2>
-        <?php if(!$likedSyair): ?>
-            <p>No liked syair yet.</p>
-            <?php else: ?>
-            <table class="table">
-                <tr><th>Title</th><th>Author</th><th>Year</th></tr>
-                <?php foreach($likedSyair as $s): ?>
-                <tr>
-                    <td><?=$s['TITLE']?></td>
-                    <td><?=$s['AUTHOR']?></td>
-                    <td><?=$s['YEARPUBLISH']?></td>
-                </tr>
-                <?php endforeach;?>
-            </table>
-        <?php endif;?>
-    </div>
+                <!-- BOOKMARK -->
+                <a class="btn-bookmark <?= isset($s['ISBOOKMARKED']) && $s['ISBOOKMARKED'] ? 'active' : '' ?>"
+                   href="bookmark.php?id=<?= $s['SYAIRID'] ?>"
+                   title="Bookmark">
+                    <i class="fa-solid fa-bookmark"></i>
+                </a>
+            </td>
+        </tr>
+        <?php endforeach;?>
+    </table>
+    <?php endif;?>
+</div>
 
+<!-- LIKED -->
+<div id="liked" class="tab">
+    <h2>Liked Syair</h2>
+    <?php if(!$likedSyair): ?>
+        <p>No liked syair yet.</p>
+    <?php else: ?>
+    <table class="table">
+        <tr><th>Title</th><th>Author</th><th>Year</th><th>Actions</th></tr>
+        <?php foreach($likedSyair as $s): ?>
+        <tr>
+            <td><?= htmlspecialchars($s['TITLE']) ?></td>
+            <td><?= htmlspecialchars($s['AUTHOR']) ?></td>
+            <td><?= htmlspecialchars($s['YEARPUBLISH']) ?></td>
+            <td>
+                <!-- VIEW -->
+                <a class="btn-view" href="viewSyair.php?id=<?= $s['SYAIRID'] ?>&from=liked">
+                    <i class="fa-solid fa-eye"></i>
+                </a>
+
+                <!-- LIKE -->
+                <a class="btn-like <?= isset($s['ISLIKED']) && $s['ISLIKED'] ? 'active' : '' ?>"
+                   href="liked.php?id=<?= $s['SYAIRID'] ?>"
+                   title="Like">
+                    <i class="fa-solid fa-heart"></i>
+                </a>
+            </td>
+        </tr>
+        <?php endforeach;?>
+    </table>
+    <?php endif;?>
+</div>
 </div>
 </body>
 </html>
