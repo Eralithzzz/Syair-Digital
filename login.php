@@ -2,10 +2,15 @@
 session_start();
 require_once 'oracle.php';
 
+$swal = null; // Initialize SweetAlert variable
+
 // 1. Check for success message from registration
-$success = '';
 if (isset($_SESSION['register_success'])) {
-    $success = $_SESSION['register_success'];
+    $swal = [
+        'icon' => 'success',
+        'title' => 'Registration Successful',
+        'text' => $_SESSION['register_success']
+    ];
     unset($_SESSION['register_success']);
 }
 
@@ -18,8 +23,6 @@ if (isset($_SESSION['user_id'])) {
     }
     exit();
 }
-
-$error = '';
 
 // 3. Handle Login Logic
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -52,10 +55,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             exit();
         } else {
-            $error = 'Invalid email or password';
+            $swal = [
+                'icon' => 'error',
+                'title' => 'Login Failed',
+                'text' => 'Invalid email or password'
+            ];
         }
     } catch (Exception $e) {
-        $error = 'Login error: ' . $e->getMessage();
+        $swal = [
+            'icon' => 'error',
+            'title' => 'System Error',
+            'text' => $e->getMessage()
+        ];
     }
 }
 ?>
@@ -68,13 +79,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Syair Digital</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         /* 1. RESET & BODY */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Poppins', sans-serif;
         }
 
         body {
@@ -118,6 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .logo i {
             font-size: 36px;
             margin-right: 15px;
+            color: #ffeb3b;
+            /* Accent Gold */
         }
 
         .logo h1 {
@@ -228,25 +243,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-decoration: underline;
         }
 
-        /* MESSAGES */
-        .error {
-            color: #dc3545;
-            background: rgba(220, 53, 69, 0.1);
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 15px;
-            text-align: center;
-        }
-
-        .success {
-            color: #28a745;
-            background: rgba(40, 167, 69, 0.1);
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .container {
@@ -282,10 +278,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Sign in to your account</p>
             </div>
 
-            <?php if (!empty($success)): ?>
-                <div class="success"><?php echo htmlspecialchars($success); ?></div>
-            <?php endif; ?>
-
             <form action="" method="POST">
                 <div class="form-group">
                     <div class="input-with-icon">
@@ -304,16 +296,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit" class="login-button">Login</button>
             </form>
 
-            <?php if (!empty($error)): ?>
-                <div class="error"><?php echo htmlspecialchars($error); ?></div>
-            <?php endif; ?>
-
             <div class="links">
-                <p>New here? <span><a href="register.php">Register now!</span></p></a>
+                <p>New here? <span><a href="register.php">Register now!</a></span></p>
                 <a href="forgot_password.php">Forgot Password?</a>
             </div>
         </div>
     </div>
+
+    <?php if ($swal): ?>
+        <script>
+            Swal.fire({
+                icon: '<?php echo $swal['icon']; ?>',
+                title: '<?php echo $swal['title']; ?>',
+                text: '<?php echo $swal['text']; ?>',
+                confirmButtonColor: '#800000'
+            });
+        </script>
+    <?php endif; ?>
 
 </body>
 

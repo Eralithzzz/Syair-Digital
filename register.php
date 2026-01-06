@@ -3,7 +3,6 @@ session_start();
 require_once 'oracle.php';
 
 $error = '';
-$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
@@ -45,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $userId = $row['USERID'];
 
                 // Insert into BASE_USER
-                $sql = "INSERT INTO BASE_USER (userId, email, name, username, password, role)
+                $sql = "INSERT INTO BASE_USER (userId, email, name, username, password, role) 
                         VALUES (:userId, :email, :name, :username, :password, 'Users')";
 
                 $stmt = oci_parse($db_conn, $sql);
@@ -66,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     if (oci_execute($stmt, OCI_NO_AUTO_COMMIT)) {
                         oci_commit($db_conn);
+                        // Redirect to login (Success message will be shown there via Session)
                         $_SESSION['register_success'] = 'Registration successful! Please login.';
                         header('Location: login.php');
                         exit();
@@ -88,12 +88,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Syair Digital Collection</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Poppins', sans-serif;
         }
 
         body {
@@ -237,16 +239,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-weight: 600;
         }
 
-        .error {
-            color: #dc3545;
-            background: rgba(220, 53, 69, 0.1);
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 14px;
-        }
-
         @media (max-width: 850px) {
             .container {
                 flex-direction: column;
@@ -286,10 +278,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <h2>Register</h2>
                 <p>Create your student account today</p>
             </div>
-
-            <?php if ($error): ?>
-                <div class="error"><?php echo htmlspecialchars($error); ?></div>
-            <?php endif; ?>
 
             <form method="POST" action="">
                 <div class="form-group">
@@ -335,6 +323,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
+
+    <?php if (!empty($error)): ?>
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Registration Failed',
+                text: '<?php echo $error; ?>',
+                confirmButtonColor: '#800000'
+            });
+        </script>
+    <?php endif; ?>
 
 </body>
 
