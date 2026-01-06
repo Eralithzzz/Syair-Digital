@@ -26,12 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $idRes = fetchAll("SELECT syair_seq.NEXTVAL AS NEXT_ID FROM DUAL");
             $new_sid = $idRes[0]['NEXT_ID'];
 
-            $sqlSyair = "INSERT INTO SYAIR (syairId, title, content, author, yearPublish, userId) 
-                         VALUES (:sid, :title, :content, :author, TO_DATE(:pdate, 'YYYY-MM-DD'), :admin_id)";
+            $sqlSyair = "INSERT INTO SYAIR (syairId, title, theme, content, author, yearPublish, userId) 
+                         VALUES (:sid, :title, :theme, :content, :author, TO_DATE(:pdate, 'YYYY-MM-DD'), :admin_id)";
 
             executeQuery($sqlSyair, [
                 ':sid'      => $new_sid,
                 ':title'    => $_POST['title'],
+                ':theme'    => $_POST['theme'],
                 ':content'  => $_POST['content'],
                 ':author'   => $_POST['author'],
                 ':pdate'    => $_POST['publish_date'],
@@ -55,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         WHERE syairId = :sid";
             executeQuery($sqlEdit, [
                 ':title'   => $_POST['edit_title'],
+                ':theme'   => $_POST['edit_theme'],
                 ':content' => $_POST['edit_content'],
                 ':author'  => $_POST['edit_author'],
                 ':pdate'   => $_POST['edit_date'],
@@ -159,7 +161,7 @@ try {
                              FROM SYAIR s JOIN BASE_USER b ON s.userId = b.userId 
                              JOIN STATUS st ON s.syairId = st.syairId WHERE st.currentStatus = 'Pending'");
 
-    $managePoemsList = fetchAll("SELECT s.syairId, s.title, s.content, s.author, st.currentStatus, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE 
+    $managePoemsList = fetchAll("SELECT s.syairId, s.title, s.theme, s.content, s.author, st.currentStatus, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE 
                               FROM SYAIR s 
                               JOIN BASE_USER b ON s.userId = b.userId 
                               JOIN STATUS st ON s.syairId = st.syairId 
@@ -170,7 +172,7 @@ try {
     $reportType   = $_GET['report_type'] ?? 'poems';
 
     if ($reportFilter == 'All') {
-        $sqlReport = "SELECT s.syairId, s.title, s.content, s.author, st.currentStatus, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE 
+        $sqlReport = "SELECT s.syairId, s.title, s.theme, s.content, s.author, st.currentStatus, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE 
                       FROM SYAIR s JOIN STATUS st ON s.syairId = st.syairId ORDER BY s.syairId DESC";
         $reportPoems = fetchAll($sqlReport);
     } else {
@@ -789,6 +791,7 @@ try {
                             <th>#</th>
                             <th>ID</th>
                             <th>Title</th>
+                            <th>Theme</th>
                             <th>Author</th>
                             <th>Status</th>
                             <th>Action</th>
@@ -809,6 +812,7 @@ try {
                                         <?php echo htmlspecialchars($row['TITLE']); ?>
                                     </a>
                                 </td>
+                                <td><?php echo htmlspecialchars($row['THEME']); ?></td>
                                 <td><?php echo htmlspecialchars($row['AUTHOR']); ?></td>
                                 <td>
                                     <span class="status-badge <?php echo match ($row['CURRENTSTATUS']) {
@@ -834,7 +838,7 @@ try {
                                         </select>
                                     </form>
 
-                                    <button class="btn btn-blue" style="padding: 7px 10px;" onclick="openEditPoem('<?php echo $row['SYAIRID']; ?>','<?php echo htmlspecialchars($row['TITLE'], ENT_QUOTES); ?>','<?php echo htmlspecialchars($row['AUTHOR'], ENT_QUOTES); ?>','<?php echo $row['PUB_DATE']; ?>',`<?php echo addslashes($content); ?>`)">
+                                    <button class="btn btn-blue" style="padding: 7px 10px;" onclick="openEditPoem('<?php echo $row['SYAIRID']; ?>','<?php echo htmlspecialchars($row['TITLE'], ENT_QUOTES); ?>','<?php echo htmlspecialchars($row['THEME'], ENT_QUOTES); ?>','<?php echo htmlspecialchars($row['AUTHOR'], ENT_QUOTES); ?>','<?php echo $row['PUB_DATE']; ?>',`<?php echo addslashes($content); ?>`)">
                                         <i class="fa fa-pen"></i>
                                     </button>
 
@@ -927,6 +931,7 @@ try {
                                 <th>#</th>
                                 <th>ID</th>
                                 <th>Title</th>
+                                <th>Theme</th>
                                 <th>Author</th>
                                 <th>Content (Excerpt)</th>
                                 <th>Date</th>
@@ -940,6 +945,7 @@ try {
                                     <td><?php echo $i++; ?></td>
                                     <td>#<?php echo $row['SYAIRID']; ?></td>
                                     <td><strong><?php echo htmlspecialchars($row['TITLE']); ?></strong></td>
+                                    <td><?php echo htmlspecialchars($row['THEME']); ?></td>
                                     <td><?php echo htmlspecialchars($row['AUTHOR']); ?></td>
                                     <td>
                                         <div class="content-cell"><?php echo htmlspecialchars($content); ?></div>
@@ -990,13 +996,47 @@ try {
     </div>
 
     <div id="addPoemModal" class="modal">
-        <div class="modal-content"><span class="close" onclick="this.parentElement.parentElement.style.display='none'">&times;</span>
+        <div class="modal-content">
+            <span class="close" onclick="this.parentElement.parentElement.style.display='none'">&times;</span>
             <h3>Add New Poem</h3>
-            <form method="POST"><input type="hidden" name="action_type" value="add_syair">
-                <div class="form-group"><label>Title</label><input type="text" name="title" required></div>
-                <div class="form-group"><label>Author</label><input type="text" name="author" required></div>
-                <div class="form-group"><label>Date</label><input type="date" name="publish_date" required></div>
-                <div class="form-group"><label>Content</label><textarea name="content" rows="6" required></textarea></div><button class="btn btn-primary" style="width:100%">Post</button>
+            <form method="POST">
+                <input type="hidden" name="action_type" value="add_syair">
+
+                <div class="form-group">
+                    <label><i class="fas fa-heading"></i> Title</label>
+                    <input type="text" name="title" required>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-palette"></i> Theme</label>
+                    <select name="theme" id="theme_option" required style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; background: #f9f9f9;">
+                        <option value="">-- Select a theme --</option>
+                        <option value="Love">Love & Romance</option>
+                        <option value="Religion">Religion & Spirituality</option>
+                        <option value="Advice">Advice & Wisdom</option>
+                        <option value="History">History & Heritage</option>
+                        <option value="Nature">Nature & Environment</option>
+                        <option value="Social">Social Issues</option>
+                        <option value="Patriotism">Patriotism</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-user-pen"></i> Author</label>
+                    <input type="text" name="author" required>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-calendar"></i> Date</label>
+                    <input type="date" name="publish_date" required>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-scroll"></i> Content</label>
+                    <textarea name="content" rows="6" required></textarea>
+                </div>
+
+                <button class="btn btn-primary" style="width:100%"><i class="fas fa-paper-plane"></i> Post</button>
             </form>
         </div>
     </div>
@@ -1006,6 +1046,7 @@ try {
             <h3>Edit Poem</h3>
             <form method="POST"><input type="hidden" name="action_type" value="edit_syair"><input type="hidden" name="edit_syair_id" id="ep_id">
                 <div class="form-group"><label>Title</label><input type="text" name="edit_title" id="ep_title" required></div>
+                <div class="form-group"><label>Theme</label><input type="text" name="edit_theme" id="ep_theme" required></div>
                 <div class="form-group"><label>Author</label><input type="text" name="edit_author" id="ep_author" required></div>
                 <div class="form-group"><label>Date</label><input type="date" name="edit_date" id="ep_date" required></div>
                 <div class="form-group"><label>Content</label><textarea name="edit_content" id="ep_content" rows="6" required></textarea></div><button class="btn btn-primary" style="width:100%">Update</button>
@@ -1057,9 +1098,10 @@ try {
             document.getElementById('viewModal').style.display = 'block';
         }
 
-        function openEditPoem(i, t, a, d, c) {
+        function openEditPoem(i, t, th, a, d, c) {
             document.getElementById('ep_id').value = i;
             document.getElementById('ep_title').value = t;
+            document.getElementById('ep_theme').value = th;
             document.getElementById('ep_author').value = a;
             document.getElementById('ep_date').value = d;
             document.getElementById('ep_content').value = c;
