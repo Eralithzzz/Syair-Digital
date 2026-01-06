@@ -746,7 +746,7 @@ try {
                         </thead>
                         <tbody>
                             <?php
-                            $i = 1; // Counter Init
+                            $i = 1;
                             foreach ($pendingList as $row):
                                 $content = is_object($row['CONTENT']) ? $row['CONTENT']->load() : $row['CONTENT'];
                             ?>
@@ -756,7 +756,7 @@ try {
                                     <td>
                                         <input type="hidden" id="pending_content_<?php echo $row['SYAIRID']; ?>" value="<?php echo htmlspecialchars($content); ?>">
 
-                                        <a href="javascript:void(0);" style="color:#3699ff; font-weight:600; text-decoration:none;"
+                                        <a href="javascript:void(0);" style="color:var(--primary); font-weight:600; text-decoration:none;"
                                             onclick="viewPoem('<?php echo htmlspecialchars($row['TITLE'], ENT_QUOTES); ?>', document.getElementById('pending_content_<?php echo $row['SYAIRID']; ?>').value)">
                                             <?php echo htmlspecialchars($row['TITLE']); ?>
                                         </a>
@@ -814,17 +814,36 @@ try {
                                     <span class="status-badge <?php echo match ($row['CURRENTSTATUS']) {
                                                                     'Approved' => 'status-approved',
                                                                     'Rejected' => 'status-rejected',
-                                                                    default => 'status-pending'
+                                                                    'Pending'  => 'status-pending',
+                                                                    default    => 'status-pending'
                                                                 }; ?>">
                                         <?php echo $row['CURRENTSTATUS']; ?>
                                     </span>
                                 </td>
-                                <td>
-                                    <button class="btn btn-blue" onclick="openEditPoem('<?php echo $row['SYAIRID']; ?>','<?php echo htmlspecialchars($row['TITLE'], ENT_QUOTES); ?>','<?php echo htmlspecialchars($row['AUTHOR'], ENT_QUOTES); ?>','<?php echo $row['PUB_DATE']; ?>',`<?php echo addslashes($content); ?>`)"><i class="fa fa-pen"></i></button>
-                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this poem?');">
+
+                                <td style="white-space: nowrap;">
+                                    <form method="POST" style="display:inline-block; margin-right: 5px;">
+                                        <input type="hidden" name="action_type" value="update_status">
+                                        <input type="hidden" name="syair_id" value="<?php echo $row['SYAIRID']; ?>">
+
+                                        <select name="status" onchange="this.form.submit()"
+                                            style="padding: 6px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.85rem; cursor: pointer; background: #fff;">
+                                            <option value="Pending" <?php if ($row['CURRENTSTATUS'] == 'Pending')  echo 'selected'; ?>>Pending</option>
+                                            <option value="Approved" <?php if ($row['CURRENTSTATUS'] == 'Approved') echo 'selected'; ?>>Approved</option>
+                                            <option value="Rejected" <?php if ($row['CURRENTSTATUS'] == 'Rejected') echo 'selected'; ?>>Rejected</option>
+                                        </select>
+                                    </form>
+
+                                    <button class="btn btn-blue" style="padding: 7px 10px;" onclick="openEditPoem('<?php echo $row['SYAIRID']; ?>','<?php echo htmlspecialchars($row['TITLE'], ENT_QUOTES); ?>','<?php echo htmlspecialchars($row['AUTHOR'], ENT_QUOTES); ?>','<?php echo $row['PUB_DATE']; ?>',`<?php echo addslashes($content); ?>`)">
+                                        <i class="fa fa-pen"></i>
+                                    </button>
+
+                                    <form method="POST" style="display:inline;" id="del_poem_<?php echo $row['SYAIRID']; ?>">
                                         <input type="hidden" name="action_type" value="delete_syair">
                                         <input type="hidden" name="delete_syair_id" value="<?php echo $row['SYAIRID']; ?>">
-                                        <button class="btn btn-red"><i class="fa fa-trash"></i></button>
+                                        <button type="button" class="btn btn-red" style="padding: 7px 10px;" onclick="confirmDelete('del_poem_<?php echo $row['SYAIRID']; ?>')">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
                                     </form>
                                 </td>
                             </tr>
@@ -862,10 +881,10 @@ try {
                                 <td><?php echo $u['JOINED_DATE']; ?></td>
                                 <td>
                                     <button class="btn btn-blue" onclick="openEditUser('<?php echo $u['USERID']; ?>','<?php echo $u['NAME']; ?>','<?php echo $u['EMAIL']; ?>','<?php echo $u['ROLE']; ?>')"><i class="fa fa-pen"></i></button>
-                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Delete user?');">
+                                    <form method="POST" style="display:inline;" id="del_user_<?php echo $u['USERID']; ?>">
                                         <input type="hidden" name="action_type" value="delete_user">
                                         <input type="hidden" name="delete_user_id" value="<?php echo $u['USERID']; ?>">
-                                        <button class="btn btn-red"><i class="fa fa-trash"></i></button>
+                                        <button type="button" class="btn btn-red" onclick="confirmDelete('del_user_<?php echo $u['USERID']; ?>')"><i class="fa fa-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>
@@ -1056,6 +1075,22 @@ try {
         }
         window.onclick = function(e) {
             if (e.target.className == 'modal') e.target.style.display = "none";
+        }
+
+        function confirmDelete(formId) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f64e60',
+                cancelButtonColor: '#3699ff',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById(formId).submit();
+                }
+            })
         }
     </script>
 
