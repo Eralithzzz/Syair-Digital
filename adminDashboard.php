@@ -17,7 +17,7 @@ if (isset($_GET['logout'])) {
 
 $swal = null;
 
-// --- 2. BACKEND LOGIC (KEPT EXACTLY THE SAME) ---
+// --- 2. BACKEND LOGIC ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // A. ADD POEM
