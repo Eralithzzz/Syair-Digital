@@ -200,6 +200,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_syair'])) {
         exit();
     }
 }
+// ==========================
+// HANDLE DELETE SYAIR
+// ==========================
+if(isset($_GET['delete_syair'])) {
+    $syairIdToDelete = intval($_GET['delete_syair']);
+
+    // Pastikan syair tu milik user
+    $checkSql = "SELECT COUNT(*) AS CNT FROM SYAIR WHERE syairId = :syairId AND userId = :userId";
+    $stmt = oci_parse($db_conn, $checkSql);
+    oci_bind_by_name($stmt, ':syairId', $syairIdToDelete);
+    oci_bind_by_name($stmt, ':userId', $userId);
+    oci_execute($stmt);
+    $row = oci_fetch_assoc($stmt);
+
+    if($row['CNT'] > 0) {
+    // Start delete with commit control
+    $success = true;
+
+    // 1. Delete STATUS first
+    $delStatusSql = "DELETE FROM STATUS WHERE syairId = :syairId";
+    $stmtStatus = oci_parse($db_conn, $delStatusSql);
+    oci_bind_by_name($stmtStatus, ':syairId', $syairIdToDelete);
+    if(!oci_execute($stmtStatus, OCI_NO_AUTO_COMMIT)) $success = false;
+
+    // 2. Delete BOOKMARK (optional, in case user bookmarked it)
+    $delBookmarkSql = "DELETE FROM BOOKMARK WHERE syairId = :syairId";
+    $stmtBookmark = oci_parse($db_conn, $delBookmarkSql);
+    oci_bind_by_name($stmtBookmark, ':syairId', $syairIdToDelete);
+    if(!oci_execute($stmtBookmark, OCI_NO_AUTO_COMMIT)) $success = false;
+
+    // 3. Delete LIKED (optional, in case user liked it)
+    $delLikedSql = "DELETE FROM LIKED WHERE syairId = :syairId";
+    $stmtLiked = oci_parse($db_conn, $delLikedSql);
+    oci_bind_by_name($stmtLiked, ':syairId', $syairIdToDelete);
+    if(!oci_execute($stmtLiked, OCI_NO_AUTO_COMMIT)) $success = false;
+
+    // 4. Delete SYAIR
+    $delSql = "DELETE FROM SYAIR WHERE syairId = :syairId";
+    $stmtDel = oci_parse($db_conn, $delSql);
+    oci_bind_by_name($stmtDel, ':syairId', $syairIdToDelete);
+    if(!oci_execute($stmtDel, OCI_NO_AUTO_COMMIT)) $success = false;
+
+    // Commit or rollback
+    if($success) {
+        oci_commit($db_conn);
+        $_SESSION['success'] = "Syair deleted successfully ✅";
+    } else {
+        oci_rollback($db_conn);
+        $_SESSION['error'] = "Failed to delete Syair ❌";
+    }
+}
+
+
+    header("Location: userDashboard.php#mySyair");
+    exit();
+}
+
 
 // ==========================
 // FETCH MESSAGES
@@ -497,7 +554,14 @@ unset($_SESSION['success'], $_SESSION['error']);
                                     <span class="status-badge status-<?php echo strtolower($s['CURRENTSTATUS']); ?>">
                                         <?php echo $s['CURRENTSTATUS']; ?>
                                     </span>
+                                    <a href="userDashboard.php?delete_syair=<?php echo $s['SYAIRID']; ?>" 
+                                    class="btn btn-danger btn-delete" 
+                                    onclick="return confirm('Are you sure you want to delete this Syair?');" 
+                                    title="Delete Syair">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
                                 </td>
+
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
