@@ -4,7 +4,8 @@ CREATE TABLE BASE_USER (
     name VARCHAR2(100) NOT NULL,
     username VARCHAR2(50) NOT NULL UNIQUE,
     password VARCHAR2(255) NOT NULL,
-    role VARCHAR2(20) CHECK (role IN ('Users', 'Admin'))
+    role VARCHAR2(20) CHECK (role IN ('Users', 'Admin')),
+    created_at DATE DEFAULT SYSDATE
 );
 
 CREATE TABLE USERS (
@@ -24,6 +25,8 @@ CREATE TABLE SYAIR (
     author VARCHAR2(100) NOT NULL,
     yearPublish DATE,
     userId NUMBER NOT NULL,
+    theme VARCHAR(100) NOT NULL,
+    created_at DATE DEFAULT SYSDATE,
     FOREIGN KEY (userId) REFERENCES BASE_USER(userId)
 );
 
@@ -82,28 +85,3 @@ CREATE SEQUENCE liked_seq START WITH 1 INCREMENT BY 1;
 --DROP SEQUENCE users_seq;
 --DROP SEQUENCE baseuser_seq;
 
-ALTER TABLE BASE_USER ADD created_at DATE DEFAULT SYSDATE;
-ALTER TABLE SYAIR ADD created_at DATE DEFAULT SYSDATE;
-
-DECLARE
-    v_userId NUMBER;
-BEGIN
-    INSERT INTO BASE_USER (userId, email, name, username, password, role)
-    VALUES (
-        baseuser_seq.NEXTVAL, 
-        'admin1@gmail.com', 
-        'Admin User', 
-        'admin1', 
-        '$2y$10$SHA.sz6dsk9EZ18Z/Uh7Bu6TmKfGisY13n8i6mvoWM0QxJKNVFqaS',
-        'Admin'
-    )
-    RETURNING userId INTO v_userId;
-    
-    INSERT INTO ADMIN (userId)
-    VALUES (v_userId);
-    
-    COMMIT;
-END;
-/
-
-ALTER TABLE SYAIR ADD theme VARCHAR(100) NOT NULL;

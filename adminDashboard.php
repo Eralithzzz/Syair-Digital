@@ -658,6 +658,7 @@ try {
                 background: white;
                 font-size: 12pt;
                 -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             .content-cell {
