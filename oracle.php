@@ -2,7 +2,7 @@
 // php & Oracle DB connection file
 $user = "SyairDigital"; //oracle username
 $pass = "SyairDigital"; //Oracle password
-$host = "localhost:1521/FREEPDB1"; //server name or ip address
+$host = "localhost:1521/freepdb1"; //server name or ip address
 $db_conn = oci_connect($user, $pass, $host);
 if (!$db_conn) {
     $e = oci_error();

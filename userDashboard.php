@@ -203,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_syair'])) {
 // ==========================
 // HANDLE DELETE SYAIR
 // ==========================
-if(isset($_GET['delete_syair'])) {
+if (isset($_GET['delete_syair'])) {
     $syairIdToDelete = intval($_GET['delete_syair']);
 
     // Pastikan syair tu milik user
@@ -214,43 +214,43 @@ if(isset($_GET['delete_syair'])) {
     oci_execute($stmt);
     $row = oci_fetch_assoc($stmt);
 
-    if($row['CNT'] > 0) {
-    // Start delete with commit control
-    $success = true;
+    if ($row['CNT'] > 0) {
+        // Start delete with commit control
+        $success = true;
 
-    // 1. Delete STATUS first
-    $delStatusSql = "DELETE FROM STATUS WHERE syairId = :syairId";
-    $stmtStatus = oci_parse($db_conn, $delStatusSql);
-    oci_bind_by_name($stmtStatus, ':syairId', $syairIdToDelete);
-    if(!oci_execute($stmtStatus, OCI_NO_AUTO_COMMIT)) $success = false;
+        // 1. Delete STATUS first
+        $delStatusSql = "DELETE FROM STATUS WHERE syairId = :syairId";
+        $stmtStatus = oci_parse($db_conn, $delStatusSql);
+        oci_bind_by_name($stmtStatus, ':syairId', $syairIdToDelete);
+        if (!oci_execute($stmtStatus, OCI_NO_AUTO_COMMIT)) $success = false;
 
-    // 2. Delete BOOKMARK (optional, in case user bookmarked it)
-    $delBookmarkSql = "DELETE FROM BOOKMARK WHERE syairId = :syairId";
-    $stmtBookmark = oci_parse($db_conn, $delBookmarkSql);
-    oci_bind_by_name($stmtBookmark, ':syairId', $syairIdToDelete);
-    if(!oci_execute($stmtBookmark, OCI_NO_AUTO_COMMIT)) $success = false;
+        // 2. Delete BOOKMARK (optional, in case user bookmarked it)
+        $delBookmarkSql = "DELETE FROM BOOKMARK WHERE syairId = :syairId";
+        $stmtBookmark = oci_parse($db_conn, $delBookmarkSql);
+        oci_bind_by_name($stmtBookmark, ':syairId', $syairIdToDelete);
+        if (!oci_execute($stmtBookmark, OCI_NO_AUTO_COMMIT)) $success = false;
 
-    // 3. Delete LIKED (optional, in case user liked it)
-    $delLikedSql = "DELETE FROM LIKED WHERE syairId = :syairId";
-    $stmtLiked = oci_parse($db_conn, $delLikedSql);
-    oci_bind_by_name($stmtLiked, ':syairId', $syairIdToDelete);
-    if(!oci_execute($stmtLiked, OCI_NO_AUTO_COMMIT)) $success = false;
+        // 3. Delete LIKED (optional, in case user liked it)
+        $delLikedSql = "DELETE FROM LIKED WHERE syairId = :syairId";
+        $stmtLiked = oci_parse($db_conn, $delLikedSql);
+        oci_bind_by_name($stmtLiked, ':syairId', $syairIdToDelete);
+        if (!oci_execute($stmtLiked, OCI_NO_AUTO_COMMIT)) $success = false;
 
-    // 4. Delete SYAIR
-    $delSql = "DELETE FROM SYAIR WHERE syairId = :syairId";
-    $stmtDel = oci_parse($db_conn, $delSql);
-    oci_bind_by_name($stmtDel, ':syairId', $syairIdToDelete);
-    if(!oci_execute($stmtDel, OCI_NO_AUTO_COMMIT)) $success = false;
+        // 4. Delete SYAIR
+        $delSql = "DELETE FROM SYAIR WHERE syairId = :syairId";
+        $stmtDel = oci_parse($db_conn, $delSql);
+        oci_bind_by_name($stmtDel, ':syairId', $syairIdToDelete);
+        if (!oci_execute($stmtDel, OCI_NO_AUTO_COMMIT)) $success = false;
 
-    // Commit or rollback
-    if($success) {
-        oci_commit($db_conn);
-        $_SESSION['success'] = "Syair deleted successfully ✅";
-    } else {
-        oci_rollback($db_conn);
-        $_SESSION['error'] = "Failed to delete Syair ❌";
+        // Commit or rollback
+        if ($success) {
+            oci_commit($db_conn);
+            $_SESSION['success'] = "Syair deleted successfully ✅";
+        } else {
+            oci_rollback($db_conn);
+            $_SESSION['error'] = "Failed to delete Syair ❌";
+        }
     }
-}
 
 
     header("Location: userDashboard.php#mySyair");
@@ -281,6 +281,7 @@ unset($_SESSION['success'], $_SESSION['error']);
 
 
 </head>
+
 <body>
 
     <div class="sidebar">
@@ -303,12 +304,12 @@ unset($_SESSION['success'], $_SESSION['error']);
     <div class="main">
         <div class="topbar">
             <div>
-                <h3 style="color: var(--primary);">Welcome, <?php echo htmlspecialchars($name); ?>!</h3>
+                <h3 style="color: var(--primary);">Welcome, <?php echo ucfirst(htmlspecialchars($name)); ?>!</h3>
                 <small style="color: #888;">Last login: <?php echo date('d M Y, H:i'); ?></small>
             </div>
             <div class="user-profile">
                 <div style="text-align: right;">
-                    <div style="font-weight: 600; font-size: 0.9rem;">@<?php echo htmlspecialchars($username); ?></div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">@<?php echo ucfirst(htmlspecialchars($username)); ?></div>
                     <div style="font-size: 0.75rem; color: #888;"><?php echo htmlspecialchars($email); ?></div>
                 </div>
                 <div class="avatar"><?php echo strtoupper(substr($name, 0, 1)); ?></div>
@@ -367,33 +368,33 @@ unset($_SESSION['success'], $_SESSION['error']);
                         <span class="section-title">Recently Added Syair</span>
                         <a href="#homepage" onclick="showTab('homepage')" class="btn btn-primary">View All</a>
                     </div>
-                    <?php if(count($recentPoems) > 0): ?>
-                    <div class="poem-grid">
-                        <?php foreach($recentPoems as $poem): ?>
-                        <div class="poem-card">
-                            <div class="poem-title"><?php echo htmlspecialchars($poem['TITLE']); ?></div>
-                            <div class="poem-meta">By: <?php echo htmlspecialchars($poem['AUTHOR']); ?></div>
-                            <div class="poem-meta">Year: <?php echo htmlspecialchars($poem['YEARPUBLISH']); ?></div>
-                            <div class="poem-meta">Added by: <?php echo htmlspecialchars($poem['ADDED_BY']); ?></div>
-                            <div style="margin-top: 15px;">
-                                <a href="viewSyair.php?id=<?php echo $poem['SYAIRID']; ?>" class="btn btn-primary" style="font-size: 0.8rem; padding: 6px 12px;">
-                                    <i class="fas fa-eye"></i> View
-                                </a>
-                                <a class="action-btn btn-like <?php echo $poem['ISLIKED'] ? 'active' : ''; ?>" 
-                                    href="liked.php?id=<?php echo $poem['SYAIRID']; ?>" title="Like">
-                                        <i class="fas fa-heart"></i> <span class="like-count"><?php echo $poem['LIKECOUNT']; ?></span>
-                                </a>
+                    <?php if (count($recentPoems) > 0): ?>
+                        <div class="poem-grid">
+                            <?php foreach ($recentPoems as $poem): ?>
+                                <div class="poem-card">
+                                    <div class="poem-title"><?php echo htmlspecialchars($poem['TITLE']); ?></div>
+                                    <div class="poem-meta">By: <?php echo htmlspecialchars($poem['AUTHOR']); ?></div>
+                                    <div class="poem-meta">Year: <?php echo htmlspecialchars($poem['YEARPUBLISH']); ?></div>
+                                    <div class="poem-meta">Added by: <?php echo htmlspecialchars($poem['ADDED_BY']); ?></div>
+                                    <div style="margin-top: 15px;">
+                                        <a href="viewSyair.php?id=<?php echo $poem['SYAIRID']; ?>" class="btn btn-primary" style="font-size: 0.8rem; padding: 6px 12px;">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a class="action-btn btn-like <?php echo $poem['ISLIKED'] ? 'active' : ''; ?>"
+                                            href="liked.php?id=<?php echo $poem['SYAIRID']; ?>" title="Like">
+                                            <i class="fas fa-heart"></i> <span class="like-count"><?php echo $poem['LIKECOUNT']; ?></span>
+                                        </a>
 
-                                <a class="action-btn btn-bookmark <?php echo $poem['ISBOOKMARKED'] ? 'active' : ''; ?>" 
-                                    href="bookmark.php?id=<?php echo $poem['SYAIRID']; ?>" title="Bookmark">
-                                        <i class="fas fa-bookmark"></i>
-                                </a>
-                            </div>
+                                        <a class="action-btn btn-bookmark <?php echo $poem['ISBOOKMARKED'] ? 'active' : ''; ?>"
+                                            href="bookmark.php?id=<?php echo $poem['SYAIRID']; ?>" title="Bookmark">
+                                            <i class="fas fa-bookmark"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
-                        <?php endforeach; ?>
-                    </div>
                     <?php else: ?>
-                    <p style="text-align: center; color: #888; padding: 30px;">No recent Syair available. Be the first to add one!</p>
+                        <p style="text-align: center; color: #888; padding: 30px;">No recent Syair available. Be the first to add one!</p>
                     <?php endif; ?>
                 </div>
             </div>
@@ -401,54 +402,54 @@ unset($_SESSION['success'], $_SESSION['error']);
             <!-- Homepage Tab -->
             <div id="homepage" class="tab">
                 <div id="searchContainer" style="margin-bottom: 15px;">
-                    <input type="text" id="searchInput" placeholder="Search Syair by title, author, or theme..." 
-                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
+                    <input type="text" id="searchInput" placeholder="Search Syair by title, author, or theme..."
+                        style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
                 </div>
                 <div class="card">
                     <div class="section-header">
                         <span class="section-title">All Syair</span>
-                        <a href="#addSyair" onclick="showTab ('addSyair')"  class="btn btn-primary"><i class="fas fa-plus"></i> Add Your Own</a>
+                        <a href="#addSyair" onclick="showTab ('addSyair')" class="btn btn-primary"><i class="fas fa-plus"></i> Add Your Own</a>
                     </div>
-                    <?php if(count($homepageSyair) > 0): ?>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Author</th>
-                                <th>Theme</th>
-                                <th>Year</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach($homepageSyair as $s): ?>
-                            <tr>
-                                <td><strong><?php echo htmlspecialchars($s['TITLE']); ?></strong></td>
-                                <td><?php echo htmlspecialchars($s['AUTHOR']); ?></td>
-                                <td><?php echo htmlspecialchars($s['THEME']); ?></td>
-                                <td><?php echo htmlspecialchars($s['YEARPUBLISH']); ?></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <a class="action-btn btn-view" href="viewSyair.php?id=<?php echo $s['SYAIRID']; ?>" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a class="action-btn btn-like <?php echo $s['ISLIKED'] ? 'active' : ''; ?>" 
-                                            href="liked.php?id=<?php echo $s['SYAIRID']; ?>" title="Like">
-                                                <i class="fas fa-heart"></i> <span class="like-count"><?php echo $s['LIKECOUNT']; ?></span>
-                                        </a>
+                    <?php if (count($homepageSyair) > 0): ?>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>Theme</th>
+                                    <th>Year</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($homepageSyair as $s): ?>
+                                    <tr>
+                                        <td><strong><?php echo htmlspecialchars($s['TITLE']); ?></strong></td>
+                                        <td><?php echo htmlspecialchars($s['AUTHOR']); ?></td>
+                                        <td><?php echo htmlspecialchars($s['THEME']); ?></td>
+                                        <td><?php echo htmlspecialchars($s['YEARPUBLISH']); ?></td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <a class="action-btn btn-view" href="viewSyair.php?id=<?php echo $s['SYAIRID']; ?>" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a class="action-btn btn-like <?php echo $s['ISLIKED'] ? 'active' : ''; ?>"
+                                                    href="liked.php?id=<?php echo $s['SYAIRID']; ?>" title="Like">
+                                                    <i class="fas fa-heart"></i> <span class="like-count"><?php echo $s['LIKECOUNT']; ?></span>
+                                                </a>
 
-                                        <a class="action-btn btn-bookmark <?php echo $s['ISBOOKMARKED'] ? 'active' : ''; ?>" 
-                                           href="bookmark.php?id=<?php echo $s['SYAIRID']; ?>" title="Bookmark">
-                                            <i class="fas fa-bookmark"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                                                <a class="action-btn btn-bookmark <?php echo $s['ISBOOKMARKED'] ? 'active' : ''; ?>"
+                                                    href="bookmark.php?id=<?php echo $s['SYAIRID']; ?>" title="Bookmark">
+                                                    <i class="fas fa-bookmark"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     <?php else: ?>
-                    <p style="text-align: center; color: #888; padding: 30px;">No Syair available yet. Be the first to add one!</p>
+                        <p style="text-align: center; color: #888; padding: 30px;">No Syair available yet. Be the first to add one!</p>
                     <?php endif; ?>
                 </div>
             </div>
@@ -480,7 +481,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                             <div class="form-group">
                                 <label><i class="fas fa-scroll"></i> Content</label>
                                 <textarea name="content" placeholder="Write your syair here..." required oninput="updateCharCount(this)"><?= isset($_POST['content']) ? htmlspecialchars($_POST['content']) : '' ?></textarea>
-                                <div class="char-count">0 characters</div>
+                                <!-- <div class="char-count">0 characters</div> -->
                             </div>
 
                             <!-- Author -->
@@ -502,14 +503,14 @@ unset($_SESSION['success'], $_SESSION['error']);
                                     <option value="Nature">Nature & Environment</option>
                                     <option value="Social">Social Issues</option>
                                     <option value="Patriotism">Patriotism</option>
-                                    <option value="other">Other (Custom)</option>
+                                    <!-- <option value="other">Other (Custom)</option> -->
                                 </select>
                             </div>
 
-                            <div class="form-group" id="custom_theme_wrapper" style="display:none;">
+                            <!-- <div class="form-group" id="custom_theme_wrapper" style="display:none;">
                                 <label><i class="fas fa-pen"></i> Custom Theme</label>
                                 <input type="text" name="custom_theme" id="custom_theme" placeholder="Enter your custom theme">
-                            </div>
+                            </div> -->
 
                             <!-- Publication Date -->
                             <div class="form-group">
@@ -530,44 +531,44 @@ unset($_SESSION['success'], $_SESSION['error']);
                 <div class="card">
                     <div class="section-header">
                         <span class="section-title">My Added Syair</span>
-                        <a href="#addSyair" onclick="showTab ('addSyair')"  class="btn btn-primary"><i class="fas fa-plus"></i> Add New</a>
+                        <a href="#addSyair" onclick="showTab ('addSyair')" class="btn btn-primary"><i class="fas fa-plus"></i> Add New</a>
                     </div>
-                    <?php if(count($mySyair) > 0): ?>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Author</th>
-                                <th>Theme</th>
-                                <th>Year</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach($mySyair as $s): ?>
-                            <tr>
-                                <td><strong><?php echo htmlspecialchars($s['TITLE']); ?></strong></td>
-                                <td><?php echo htmlspecialchars($s['AUTHOR']); ?></td>
-                                <td><?php echo htmlspecialchars($s['THEME']); ?></td>
-                                <td><?php echo $s['YEARPUBLISH']; ?></td>
-                                <td>
-                                    <span class="status-badge status-<?php echo strtolower($s['CURRENTSTATUS']); ?>">
-                                        <?php echo $s['CURRENTSTATUS']; ?>
-                                    </span>
-                                    <a href="userDashboard.php?delete_syair=<?php echo $s['SYAIRID']; ?>" 
-                                    class="btn btn-danger btn-delete" 
-                                    onclick="return confirm('Are you sure you want to delete this Syair?');" 
-                                    title="Delete Syair">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
-                                </td>
+                    <?php if (count($mySyair) > 0): ?>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>Theme</th>
+                                    <th>Year</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($mySyair as $s): ?>
+                                    <tr>
+                                        <td><strong><?php echo htmlspecialchars($s['TITLE']); ?></strong></td>
+                                        <td><?php echo htmlspecialchars($s['AUTHOR']); ?></td>
+                                        <td><?php echo htmlspecialchars($s['THEME']); ?></td>
+                                        <td><?php echo $s['YEARPUBLISH']; ?></td>
+                                        <td>
+                                            <span class="status-badge status-<?php echo strtolower($s['CURRENTSTATUS']); ?>">
+                                                <?php echo $s['CURRENTSTATUS']; ?>
+                                            </span>
+                                            <a href="userDashboard.php?delete_syair=<?php echo $s['SYAIRID']; ?>"
+                                                class="btn btn-danger btn-delete"
+                                                onclick="return confirm('Are you sure you want to delete this Syair?');"
+                                                title="Delete Syair">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </td>
 
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     <?php else: ?>
-                    <p style="text-align: center; color: #888; padding: 30px;">You haven't added any syair yet. <a href="#addSyair" onclick="showTab ('addSyair')"  style="color: var(--primary);">Create your first one!</a></p>
+                        <p style="text-align: center; color: #888; padding: 30px;">You haven't added any syair yet. <a href="#addSyair" onclick="showTab ('addSyair')" style="color: var(--primary);">Create your first one!</a></p>
                     <?php endif; ?>
                 </div>
             </div>
@@ -578,41 +579,41 @@ unset($_SESSION['success'], $_SESSION['error']);
                     <div class="section-header">
                         <span class="section-title">Bookmarked Syair</span>
                     </div>
-                    <?php if(count($bookmarkedSyair) > 0): ?>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Author</th>
-                                <th>Theme</th>
-                                <th>Year</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach($bookmarkedSyair as $s): ?>
-                            <tr>
-                                <td><strong><?php echo htmlspecialchars($s['TITLE']); ?></strong></td>
-                                <td><?php echo htmlspecialchars($s['AUTHOR']); ?></td>
-                                <td><?php echo htmlspecialchars($s['THEME']); ?></td>
-                                <td><?php echo htmlspecialchars($s['YEARPUBLISH']); ?></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <a class="action-btn btn-view" href="viewSyair.php?id=<?php echo $s['SYAIRID']; ?>" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a class="action-btn btn-bookmark active" 
-                                           href="bookmark.php?id=<?php echo $s['SYAIRID']; ?>" title="Remove Bookmark">
-                                            <i class="fas fa-bookmark"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                    <?php if (count($bookmarkedSyair) > 0): ?>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>Theme</th>
+                                    <th>Year</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($bookmarkedSyair as $s): ?>
+                                    <tr>
+                                        <td><strong><?php echo htmlspecialchars($s['TITLE']); ?></strong></td>
+                                        <td><?php echo htmlspecialchars($s['AUTHOR']); ?></td>
+                                        <td><?php echo htmlspecialchars($s['THEME']); ?></td>
+                                        <td><?php echo htmlspecialchars($s['YEARPUBLISH']); ?></td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <a class="action-btn btn-view" href="viewSyair.php?id=<?php echo $s['SYAIRID']; ?>" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a class="action-btn btn-bookmark active"
+                                                    href="bookmark.php?id=<?php echo $s['SYAIRID']; ?>" title="Remove Bookmark">
+                                                    <i class="fas fa-bookmark"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     <?php else: ?>
-                    <p style="text-align: center; color: #888; padding: 30px;">No bookmarks yet. Start browsing and bookmark your favorite Syair!</p>
+                        <p style="text-align: center; color: #888; padding: 30px;">No bookmarks yet. Start browsing and bookmark your favorite Syair!</p>
                     <?php endif; ?>
                 </div>
             </div>
@@ -623,79 +624,79 @@ unset($_SESSION['success'], $_SESSION['error']);
                     <div class="section-header">
                         <span class="section-title">Liked Syair</span>
                     </div>
-                    <?php if(count($likedSyair) > 0): ?>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Author</th>
-                                <th>Theme</th>
-                                <th>Year</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach($likedSyair as $s): ?>
-                            <tr>
-                                <td><strong><?php echo htmlspecialchars($s['TITLE']); ?></strong></td>
-                                <td><?php echo htmlspecialchars($s['AUTHOR']); ?></td>
-                                <td><?php echo htmlspecialchars($s['THEME']); ?></td>
-                                <td><?php echo htmlspecialchars($s['YEARPUBLISH']); ?></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <a class="action-btn btn-view" href="viewSyair.php?id=<?php echo $s['SYAIRID']; ?>" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a class="action-btn btn-like active" 
-                                           href="liked.php?id=<?php echo $s['SYAIRID']; ?>" title="Unlike">
-                                            <i class="fas fa-heart"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                    <?php if (count($likedSyair) > 0): ?>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>Theme</th>
+                                    <th>Year</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($likedSyair as $s): ?>
+                                    <tr>
+                                        <td><strong><?php echo htmlspecialchars($s['TITLE']); ?></strong></td>
+                                        <td><?php echo htmlspecialchars($s['AUTHOR']); ?></td>
+                                        <td><?php echo htmlspecialchars($s['THEME']); ?></td>
+                                        <td><?php echo htmlspecialchars($s['YEARPUBLISH']); ?></td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <a class="action-btn btn-view" href="viewSyair.php?id=<?php echo $s['SYAIRID']; ?>" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a class="action-btn btn-like active"
+                                                    href="liked.php?id=<?php echo $s['SYAIRID']; ?>" title="Unlike">
+                                                    <i class="fas fa-heart"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     <?php else: ?>
-                    <p style="text-align: center; color: #888; padding: 30px;">No liked Syair yet. Start exploring and like the ones you enjoy!</p>
+                        <p style="text-align: center; color: #888; padding: 30px;">No liked Syair yet. Start exploring and like the ones you enjoy!</p>
                     <?php endif; ?>
                 </div>
             </div>
             <!-- Edit Profile Tab -->
-<div id="editProfile" class="tab">
-    <div class="card">
-        <h2><i class="fa-solid fa-user-gear"></i> Edit Profile</h2>
+            <div id="editProfile" class="tab">
+                <div class="card">
+                    <h2><i class="fa-solid fa-user-gear"></i> Edit Profile</h2>
 
-        <form method="post">
-            <input type="hidden" name="update_profile" value="1">
+                    <form method="post">
+                        <input type="hidden" name="update_profile" value="1">
 
-            <div class="form-group">
-                <label>Name</label>
-                <input type="text" name="name"
-                       value="<?= htmlspecialchars($user['NAME']) ?>" required>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" name="name"
+                                value="<?= htmlspecialchars($user['NAME']) ?>" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" name="username"
+                                value="<?= htmlspecialchars($user['USERNAME']) ?>" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" name="email"
+                                value="<?= htmlspecialchars($user['EMAIL']) ?>" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>New Password (optional)</label>
+                            <input type="password" name="password" placeholder="Leave blank to keep current password">
+                        </div>
+
+                        <button type="submit"><i class="fa-solid fa-save"></i> Save Changes</button>
+                    </form>
+                </div>
             </div>
-
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" name="username"
-                       value="<?= htmlspecialchars($user['USERNAME']) ?>" required>
-            </div>
-
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" name="email"
-                       value="<?= htmlspecialchars($user['EMAIL']) ?>" required>
-            </div>
-
-            <div class="form-group">
-                <label>New Password (optional)</label>
-                <input type="password" name="password" placeholder="Leave blank to keep current password">
-            </div>
-
-            <button type="submit"><i class="fa-solid fa-save"></i> Save Changes</button>
-        </form>
-    </div>
-</div>
 
         </div>
     </div>
@@ -706,16 +707,16 @@ unset($_SESSION['success'], $_SESSION['error']);
             // Hide all tabs
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             const selected = document.getElementById(tabName);
-            if(selected) selected.classList.add('active');
+            if (selected) selected.classList.add('active');
 
             // Update active sidebar link
             document.querySelectorAll('.sidebar a[data-tab]').forEach(link => link.classList.remove('active'));
             const activeLink = document.querySelector(`.sidebar a[data-tab="${tabName}"]`);
-            if(activeLink) activeLink.classList.add('active');
+            if (activeLink) activeLink.classList.add('active');
 
             // Show search input **only for Homepage tab**
             const searchContainer = document.getElementById('searchContainer');
-            if(searchContainer) {
+            if (searchContainer) {
                 searchContainer.style.display = (tabName === 'homepage') ? 'block' : 'none';
             }
 
@@ -735,62 +736,90 @@ unset($_SESSION['success'], $_SESSION['error']);
 
         // Check URL hash on load
         document.addEventListener('DOMContentLoaded', () => {
-            const hash = window.location.hash.replace('#','');
-            if(hash && document.getElementById(hash)) showTab(hash);
+            const hash = window.location.hash.replace('#', '');
+            if (hash && document.getElementById(hash)) showTab(hash);
             else showTab('dashboard'); // default tab
         });
 
-document.addEventListener('click', function(e) {
-    const likeBtn = e.target.closest('.btn-like');
-    const bookmarkBtn = e.target.closest('.btn-bookmark');
+        document.addEventListener('click', function(e) {
+            const likeBtn = e.target.closest('.btn-like');
+            const bookmarkBtn = e.target.closest('.btn-bookmark');
 
-    function updateCount(selector, change) {
-        const el = document.querySelector(selector);
-        if (!el) return;
-        let count = parseInt(el.textContent) || 0;
-        el.textContent = count + change;
-    }
+            function updateCount(selector, change) {
+                const el = document.querySelector(selector);
+                if (!el) return;
+                let count = parseInt(el.textContent) || 0;
+                el.textContent = count + change;
+            }
 
-    if(likeBtn) {
-        e.preventDefault();
-        fetch(likeBtn.href)
-        .then(res => res.json())
-        .then(data => {
-            const likeSpan = likeBtn.querySelector('.like-count');
-            let current = parseInt(likeSpan.textContent) || 0;
+            if (likeBtn) {
+                e.preventDefault();
+                fetch(likeBtn.href)
+                    .then(res => res.json())
+                    .then(data => {
+                        const likeSpan = likeBtn.querySelector('.like-count');
+                        let current = parseInt(likeSpan.textContent) || 0;
 
-            if(data.status === 'liked') {
-                likeBtn.classList.add('active');
-                likeSpan.textContent = current + 1;
-                updateCount('.stat-card:nth-child(3) .stat-info h3', 1);
-                Swal.fire({icon:'success', toast:true, position:'top-end', showConfirmButton:false, timer:1500, title:'Liked!'});
-            } else if(data.status === 'unliked') {
-                likeBtn.classList.remove('active');
-                likeSpan.textContent = Math.max(current - 1, 0);
-                updateCount('.stat-card:nth-child(3) .stat-info h3', -1);
-                Swal.fire({icon:'info', toast:true, position:'top-end', showConfirmButton:false, timer:1500, title:'Unliked!'});
+                        if (data.status === 'liked') {
+                            likeBtn.classList.add('active');
+                            likeSpan.textContent = current + 1;
+                            updateCount('.stat-card:nth-child(3) .stat-info h3', 1);
+                            Swal.fire({
+                                icon: 'success',
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 1500,
+                                title: 'Liked!'
+                            });
+                        } else if (data.status === 'unliked') {
+                            likeBtn.classList.remove('active');
+                            likeSpan.textContent = Math.max(current - 1, 0);
+                            updateCount('.stat-card:nth-child(3) .stat-info h3', -1);
+                            Swal.fire({
+                                icon: 'info',
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 1500,
+                                title: 'Unliked!'
+                            });
+                        }
+                    });
+            }
+
+
+            if (bookmarkBtn) {
+                e.preventDefault();
+                fetch(bookmarkBtn.href)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'bookmarked') {
+                            bookmarkBtn.classList.add('active');
+                            updateCount('.stat-card:nth-child(2) .stat-info h3', 1);
+                            Swal.fire({
+                                icon: 'success',
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 1500,
+                                title: 'Bookmarked!'
+                            });
+                        } else if (data.status === 'removed') {
+                            bookmarkBtn.classList.remove('active');
+                            updateCount('.stat-card:nth-child(2) .stat-info h3', -1);
+                            Swal.fire({
+                                icon: 'info',
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 1500,
+                                title: 'Bookmark removed!'
+                            });
+                        }
+                    });
             }
         });
-    }
-
-
-    if(bookmarkBtn) {
-        e.preventDefault();
-        fetch(bookmarkBtn.href)
-        .then(res => res.json())
-        .then(data => {
-            if(data.status === 'bookmarked') {
-                bookmarkBtn.classList.add('active');
-                updateCount('.stat-card:nth-child(2) .stat-info h3', 1);
-                Swal.fire({icon:'success', toast:true, position:'top-end', showConfirmButton:false, timer:1500, title:'Bookmarked!'});
-            } else if(data.status === 'removed') {
-                bookmarkBtn.classList.remove('active');
-                updateCount('.stat-card:nth-child(2) .stat-info h3', -1);
-                Swal.fire({icon:'info', toast:true, position:'top-end', showConfirmButton:false, timer:1500, title:'Bookmark removed!'});
-            }
-        });
-    }
-});
 
         document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('searchInput');
@@ -803,7 +832,7 @@ document.addEventListener('click', function(e) {
                     const title = row.cells[0].textContent.toLowerCase();
                     const author = row.cells[1].textContent.toLowerCase();
                     const theme = row.cells[2].textContent.toLowerCase();
-                    if(title.includes(filter) || author.includes(filter) || theme.includes(filter)) {
+                    if (title.includes(filter) || author.includes(filter) || theme.includes(filter)) {
                         row.style.display = '';
                     } else {
                         row.style.display = 'none';
@@ -811,34 +840,32 @@ document.addEventListener('click', function(e) {
                 });
             });
         });
-        
-
-
     </script>
-<?php if($success): ?>
-<script>
-Swal.fire({
-    icon: 'success',
-    title: 'Success!',
-    text: '<?= addslashes($success) ?>',
-    confirmButtonColor: '#3085d6',
-    confirmButtonText: 'OK'
-});
-</script>
-<?php endif; ?>
+    <?php if ($success): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '<?= addslashes($success) ?>',
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'OK'
+            });
+        </script>
+    <?php endif; ?>
 
-<?php if($error): ?>
-<script>
-Swal.fire({
-    icon: 'error',
-    title: 'Oops!',
-    text: '<?= addslashes($error) ?>',
-    confirmButtonColor: '#d33',
-    confirmButtonText: 'OK'
-});
-</script>
-<?php endif; ?>
+    <?php if ($error): ?>
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops!',
+                text: '<?= addslashes($error) ?>',
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'OK'
+            });
+        </script>
+    <?php endif; ?>
 
 
 </body>
+
 </html>
