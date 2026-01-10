@@ -157,33 +157,109 @@ try {
     $countApproved = fetchAll("SELECT COUNT(*) AS CNT FROM STATUS WHERE currentStatus = 'Approved'")[0]['CNT'];
     $countRejected = fetchAll("SELECT COUNT(*) AS CNT FROM STATUS WHERE currentStatus = 'Rejected'")[0]['CNT'];
 
-    $pendingList = fetchAll("SELECT s.syairId, s.title, s.content, b.name as author, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE 
-                             FROM SYAIR s JOIN BASE_USER b ON s.userId = b.userId 
-                             JOIN STATUS st ON s.syairId = st.syairId WHERE st.currentStatus = 'Pending'");
+    // Add pagination for pending approvals
+    $page_pending = isset($_GET['page_pending']) ? (int)$_GET['page_pending'] : 1;
+    $limit = 10;
+    $offset = ($page_pending - 1) * $limit;
 
-    $managePoemsList = fetchAll("SELECT s.syairId, s.title, s.theme, s.content, s.author, st.currentStatus, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE 
-                              FROM SYAIR s 
-                              JOIN BASE_USER b ON s.userId = b.userId 
-                              JOIN STATUS st ON s.syairId = st.syairId 
-                              ORDER BY s.syairId DESC");
+    $countPendingTotal = fetchAll("SELECT COUNT(*) AS CNT FROM STATUS st JOIN SYAIR s ON st.syairId = s.syairId WHERE st.currentStatus = 'Pending'")[0]['CNT'];
+    $totalPages_pending = ceil($countPendingTotal / $limit);
+
+    $pendingList = fetchAll(
+        "SELECT * FROM (
+                            SELECT s.syairId, s.title, s.content, b.name as author, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE,
+                            ROW_NUMBER() OVER (ORDER BY s.syairId DESC) as rnum
+                            FROM SYAIR s 
+                            JOIN BASE_USER b ON s.userId = b.userId 
+                            JOIN STATUS st ON s.syairId = st.syairId 
+                            WHERE st.currentStatus = 'Pending'
+                         ) WHERE rnum > :offset AND rnum <= :end_row",
+        [':offset' => $offset, ':end_row' => ($offset + $limit)]
+    );
+
+    // Add pagination for manage poems
+    $page_poems = isset($_GET['page_poems']) ? (int)$_GET['page_poems'] : 1;
+    $offset_poems = ($page_poems - 1) * $limit;
+
+    $countPoemsTotal = fetchAll("SELECT COUNT(*) AS CNT FROM SYAIR")[0]['CNT'];
+    $totalPages_poems = ceil($countPoemsTotal / $limit);
+
+    $managePoemsList = fetchAll(
+        "SELECT * FROM (
+                                SELECT s.syairId, s.title, s.theme, s.content, s.author, st.currentStatus, 
+                                TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE,
+                                ROW_NUMBER() OVER (ORDER BY s.syairId DESC) as rnum
+                                FROM SYAIR s 
+                                JOIN BASE_USER b ON s.userId = b.userId 
+                                JOIN STATUS st ON s.syairId = st.syairId
+                             ) WHERE rnum > :offset AND rnum <= :end_row",
+        [':offset' => $offset_poems, ':end_row' => ($offset_poems + $limit)]
+    );
 
     // REPORT LOGIC
     $reportFilter = $_GET['filter'] ?? 'All';
     $reportType   = $_GET['report_type'] ?? 'poems';
 
+    // Add pagination for reports
+    $page_report = isset($_GET['page_report']) ? (int)$_GET['page_report'] : 1;
+    $offset_report = ($page_report - 1) * $limit;
+
     if ($reportFilter == 'All') {
-        $sqlReport = "SELECT s.syairId, s.title, s.theme, s.content, s.author, st.currentStatus, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE 
-                      FROM SYAIR s JOIN STATUS st ON s.syairId = st.syairId ORDER BY s.syairId DESC";
-        $reportPoems = fetchAll($sqlReport);
+        $countReportTotal = fetchAll("SELECT COUNT(*) AS CNT FROM SYAIR")[0]['CNT'];
+        $totalPages_report = ceil($countReportTotal / $limit);
+
+        $sqlReport = "SELECT * FROM (
+                    SELECT s.syairId, s.title, s.theme, s.content, s.author, st.currentStatus, 
+                    TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE,
+                    ROW_NUMBER() OVER (ORDER BY s.syairId DESC) as rnum
+                    FROM SYAIR s JOIN STATUS st ON s.syairId = st.syairId
+                  ) WHERE rnum > :offset AND rnum <= :end_row";
+        $reportPoems = fetchAll($sqlReport, [':offset' => $offset_report, ':end_row' => ($offset_report + $limit)]);
     } else {
-        $sqlReport = "SELECT s.syairId, s.title, s.content, s.author, st.currentStatus, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE 
-                      FROM SYAIR s JOIN STATUS st ON s.syairId = st.syairId 
-                      WHERE st.currentStatus = :status ORDER BY s.syairId DESC";
-        $reportPoems = fetchAll($sqlReport, [':status' => $reportFilter]);
+        $countReportTotal = fetchAll("SELECT COUNT(*) AS CNT FROM SYAIR s JOIN STATUS st ON s.syairId = st.syairId WHERE st.currentStatus = :status", [':status' => $reportFilter])[0]['CNT'];
+        $totalPages_report = ceil($countReportTotal / $limit);
+
+        $sqlReport = "SELECT * FROM (
+                    SELECT s.syairId, s.title, s.theme, s.content, s.author, st.currentStatus, 
+                    TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE,
+                    ROW_NUMBER() OVER (ORDER BY s.syairId DESC) as rnum
+                    FROM SYAIR s JOIN STATUS st ON s.syairId = st.syairId 
+                    WHERE st.currentStatus = :status
+                  ) WHERE rnum > :offset AND rnum <= :end_row";
+        $reportPoems = fetchAll($sqlReport, [':status' => $reportFilter, ':offset' => $offset_report, ':end_row' => ($offset_report + $limit)]);
     }
 
-    $userList = fetchAll("SELECT userId, name, email, role, username, TO_CHAR(created_at, 'DD-MM-YYYY') as JOINED_DATE 
-                          FROM BASE_USER ORDER BY userId DESC");
+    // Pagination for user report
+    if ($reportType == 'users') {
+        $page_report_users = isset($_GET['page_report']) ? (int)$_GET['page_report'] : 1;
+        $offset_report_users = ($page_report_users - 1) * $limit;
+
+        $totalPages_report = ceil($countUsers / $limit);
+        $userList = fetchAll(
+            "SELECT * FROM (
+                            SELECT userId, name, email, role, username, TO_CHAR(created_at, 'DD-MM-YYYY') as JOINED_DATE,
+                            ROW_NUMBER() OVER (ORDER BY userId DESC) as rnum
+                            FROM BASE_USER
+                          ) WHERE rnum > :offset AND rnum <= :end_row",
+            [':offset' => $offset_report_users, ':end_row' => ($offset_report_users + $limit)]
+        );
+    }
+
+    // Add pagination for users
+    $page_users = isset($_GET['page_users']) ? (int)$_GET['page_users'] : 1;
+    $offset_users = ($page_users - 1) * $limit;
+
+    $countUsersTotal = fetchAll("SELECT COUNT(*) AS CNT FROM BASE_USER")[0]['CNT'];
+    $totalPages_users = ceil($countUsersTotal / $limit);
+
+    $userList = fetchAll(
+        "SELECT * FROM (
+                        SELECT userId, name, email, role, username, TO_CHAR(created_at, 'DD-MM-YYYY') as JOINED_DATE,
+                        ROW_NUMBER() OVER (ORDER BY userId DESC) as rnum
+                        FROM BASE_USER
+                      ) WHERE rnum > :offset AND rnum <= :end_row",
+        [':offset' => $offset_users, ':end_row' => ($offset_users + $limit)]
+    );
 } catch (Exception $e) {
     $swal = ['icon' => 'error', 'title' => 'Database Error', 'text' => $e->getMessage()];
 }
@@ -779,6 +855,15 @@ try {
                         </tbody>
                     </table>
                 <?php else: ?><p>No pending approvals.</p><?php endif; ?>
+                <?php if ($totalPages_pending > 1): ?>
+                    <div style="margin-top:20px; text-align:center;">
+                        <?php for ($p = 1; $p <= $totalPages_pending; $p++): ?>
+                            <a href="?page_pending=<?php echo $p; ?>#pending"
+                                class="btn <?php echo ($p == $page_pending) ? 'btn-primary' : 'btn-blue'; ?>"
+                                style="margin:0 3px; padding:8px 12px;"><?php echo $p; ?></a>
+                        <?php endfor; ?>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <div class="card" id="poems">
@@ -855,6 +940,15 @@ try {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                <?php if ($totalPages_poems > 1): ?>
+                    <div style="margin-top:20px; text-align:center;">
+                        <?php for ($p = 1; $p <= $totalPages_poems; $p++): ?>
+                            <a href="?page_poems=<?php echo $p; ?>#poems"
+                                class="btn <?php echo ($p == $page_poems) ? 'btn-primary' : 'btn-blue'; ?>"
+                                style="margin:0 3px; padding:8px 12px;"><?php echo $p; ?></a>
+                        <?php endfor; ?>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <div class="card" id="users">
@@ -896,6 +990,15 @@ try {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                <?php if ($totalPages_users > 1): ?>
+                    <div style="margin-top:20px; text-align:center;">
+                        <?php for ($p = 1; $p <= $totalPages_users; $p++): ?>
+                            <a href="?page_users=<?php echo $p; ?>#users"
+                                class="btn <?php echo ($p == $page_users) ? 'btn-primary' : 'btn-blue'; ?>"
+                                style="margin:0 3px; padding:8px 12px;"><?php echo $p; ?></a>
+                        <?php endfor; ?>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <div class="card" id="reports">
@@ -986,6 +1089,15 @@ try {
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                <?php endif; ?>
+                <?php if ($totalPages_report > 1): ?>
+                    <div style="margin-top:20px; text-align:center;" class="no-print">
+                        <?php for ($p = 1; $p <= $totalPages_report; $p++): ?>
+                            <a href="?report_type=<?php echo $reportType; ?>&filter=<?php echo $reportFilter; ?>&page_report=<?php echo $p; ?>#reports"
+                                class="btn <?php echo ($p == $page_report) ? 'btn-primary' : 'btn-blue'; ?>"
+                                style="margin:0 3px; padding:8px 12px;"><?php echo $p; ?></a>
+                        <?php endfor; ?>
+                    </div>
                 <?php endif; ?>
 
                 <div style="margin-top:50px; text-align:center; display:none;" class="show-print">

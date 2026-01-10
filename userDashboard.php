@@ -430,7 +430,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                                         <td><?php echo htmlspecialchars($s['YEARPUBLISH']); ?></td>
                                         <td>
                                             <div class="action-buttons">
-                                                <a class="action-btn btn-view" href="viewSyair.php?id=<?php echo $s['SYAIRID']; ?>" title="View">
+                                                <a class="action-btn btn-view" href="viewSyair.php?id=<?php echo $s['SYAIRID']; ?>&from=homepage" title="View">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 <a class="action-btn btn-like <?php echo $s['ISLIKED'] ? 'active' : ''; ?>"
@@ -599,7 +599,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                                         <td><?php echo htmlspecialchars($s['YEARPUBLISH']); ?></td>
                                         <td>
                                             <div class="action-buttons">
-                                                <a class="action-btn btn-view" href="viewSyair.php?id=<?php echo $s['SYAIRID']; ?>" title="View">
+                                                <a class="action-btn btn-view" href="viewSyair.php?id=<?php echo $s['SYAIRID']; ?>&from=bookmark" title="View">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 <a class="action-btn btn-bookmark active"
@@ -644,7 +644,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                                         <td><?php echo htmlspecialchars($s['YEARPUBLISH']); ?></td>
                                         <td>
                                             <div class="action-buttons">
-                                                <a class="action-btn btn-view" href="viewSyair.php?id=<?php echo $s['SYAIRID']; ?>" title="View">
+                                                <a class="action-btn btn-view" href="viewSyair.php?id=<?php echo $s['SYAIRID']; ?>&from=liked" title="View">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 <a class="action-btn btn-like active"
