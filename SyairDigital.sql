@@ -84,4 +84,3 @@ CREATE SEQUENCE liked_seq START WITH 1 INCREMENT BY 1;
 --DROP SEQUENCE admin_seq;
 --DROP SEQUENCE users_seq;
 --DROP SEQUENCE baseuser_seq;
-

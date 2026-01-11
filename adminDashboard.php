@@ -162,38 +162,70 @@ try {
     $limit = 10;
     $offset = ($page_pending - 1) * $limit;
 
-    $countPendingTotal = fetchAll("SELECT COUNT(*) AS CNT FROM STATUS st JOIN SYAIR s ON st.syairId = s.syairId WHERE st.currentStatus = 'Pending'")[0]['CNT'];
+    // Search handling
+    $searchPending = $_GET['search_pending'] ?? '';
+    $whereClause = '';
+    $params = [':offset' => $offset, ':end_row' => ($offset + $limit)];
+
+    if (!empty($searchPending)) {
+        $whereClause = "AND (LOWER(s.title) LIKE :search OR LOWER(b.name) LIKE :search)";
+        $params[':search'] = '%' . strtolower($searchPending) . '%';
+    }
+
+    $countPendingTotal = fetchAll(
+        "SELECT COUNT(*) AS CNT FROM STATUS st 
+     JOIN SYAIR s ON st.syairId = s.syairId 
+     JOIN BASE_USER b ON s.userId = b.userId 
+     WHERE st.currentStatus = 'Pending' $whereClause",
+        empty($searchPending) ? [] : [':search' => $params[':search']]
+    )[0]['CNT'];
+
     $totalPages_pending = ceil($countPendingTotal / $limit);
 
     $pendingList = fetchAll(
         "SELECT * FROM (
-                            SELECT s.syairId, s.title, s.content, b.name as author, TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE,
-                            ROW_NUMBER() OVER (ORDER BY s.syairId DESC) as rnum
-                            FROM SYAIR s 
-                            JOIN BASE_USER b ON s.userId = b.userId 
-                            JOIN STATUS st ON s.syairId = st.syairId 
-                            WHERE st.currentStatus = 'Pending'
-                         ) WHERE rnum > :offset AND rnum <= :end_row",
-        [':offset' => $offset, ':end_row' => ($offset + $limit)]
+        SELECT s.syairId, s.title, s.content, b.name as author, 
+               TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE,
+               ROW_NUMBER() OVER (ORDER BY s.syairId DESC) as rnum
+        FROM SYAIR s 
+        JOIN BASE_USER b ON s.userId = b.userId 
+        JOIN STATUS st ON s.syairId = st.syairId 
+        WHERE st.currentStatus = 'Pending' $whereClause
+     ) WHERE rnum > :offset AND rnum <= :end_row",
+        $params
     );
 
     // Add pagination for manage poems
     $page_poems = isset($_GET['page_poems']) ? (int)$_GET['page_poems'] : 1;
     $offset_poems = ($page_poems - 1) * $limit;
 
-    $countPoemsTotal = fetchAll("SELECT COUNT(*) AS CNT FROM SYAIR")[0]['CNT'];
+    $searchPoems = $_GET['search_poems'] ?? '';
+    $whereClause = '';
+    $params = [':offset' => $offset_poems, ':end_row' => ($offset_poems + $limit)];
+
+    if (!empty($searchPoems)) {
+        $whereClause = "WHERE (LOWER(s.title) LIKE :search OR LOWER(s.theme) LIKE :search OR LOWER(s.author) LIKE :search)";
+        $params[':search'] = '%' . strtolower($searchPoems) . '%';
+    }
+
+    $countPoemsTotal = fetchAll(
+        "SELECT COUNT(*) AS CNT FROM SYAIR s $whereClause",
+        empty($searchPoems) ? [] : [':search' => $params[':search']]
+    )[0]['CNT'];
+
     $totalPages_poems = ceil($countPoemsTotal / $limit);
 
     $managePoemsList = fetchAll(
         "SELECT * FROM (
-                                SELECT s.syairId, s.title, s.theme, s.content, s.author, st.currentStatus, 
-                                TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE,
-                                ROW_NUMBER() OVER (ORDER BY s.syairId DESC) as rnum
-                                FROM SYAIR s 
-                                JOIN BASE_USER b ON s.userId = b.userId 
-                                JOIN STATUS st ON s.syairId = st.syairId
-                             ) WHERE rnum > :offset AND rnum <= :end_row",
-        [':offset' => $offset_poems, ':end_row' => ($offset_poems + $limit)]
+        SELECT s.syairId, s.title, s.theme, s.content, s.author, st.currentStatus, 
+               TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE,
+               ROW_NUMBER() OVER (ORDER BY s.syairId DESC) as rnum
+        FROM SYAIR s 
+        JOIN BASE_USER b ON s.userId = b.userId 
+        JOIN STATUS st ON s.syairId = st.syairId
+        $whereClause
+     ) WHERE rnum > :offset AND rnum <= :end_row",
+        $params
     );
 
     // REPORT LOGIC
@@ -249,16 +281,30 @@ try {
     $page_users = isset($_GET['page_users']) ? (int)$_GET['page_users'] : 1;
     $offset_users = ($page_users - 1) * $limit;
 
-    $countUsersTotal = fetchAll("SELECT COUNT(*) AS CNT FROM BASE_USER")[0]['CNT'];
+    $searchUsers = $_GET['search_users'] ?? '';
+    $whereClause = '';
+    $params = [':offset' => $offset_users, ':end_row' => ($offset_users + $limit)];
+
+    if (!empty($searchUsers)) {
+        $whereClause = "WHERE (LOWER(email) LIKE :search OR LOWER(username) LIKE :search)";
+        $params[':search'] = '%' . strtolower($searchUsers) . '%';
+    }
+
+    $countUsersTotal = fetchAll(
+        "SELECT COUNT(*) AS CNT FROM BASE_USER $whereClause",
+        empty($searchUsers) ? [] : [':search' => $params[':search']]
+    )[0]['CNT'];
+
     $totalPages_users = ceil($countUsersTotal / $limit);
 
     $userList = fetchAll(
         "SELECT * FROM (
-                        SELECT userId, name, email, role, username, TO_CHAR(created_at, 'DD-MM-YYYY') as JOINED_DATE,
-                        ROW_NUMBER() OVER (ORDER BY userId DESC) as rnum
-                        FROM BASE_USER
-                      ) WHERE rnum > :offset AND rnum <= :end_row",
-        [':offset' => $offset_users, ':end_row' => ($offset_users + $limit)]
+        SELECT userId, name, email, role, username, TO_CHAR(created_at, 'DD-MM-YYYY') as JOINED_DATE,
+               ROW_NUMBER() OVER (ORDER BY userId DESC) as rnum
+        FROM BASE_USER
+        $whereClause
+     ) WHERE rnum > :offset AND rnum <= :end_row",
+        $params
     );
 } catch (Exception $e) {
     $swal = ['icon' => 'error', 'title' => 'Database Error', 'text' => $e->getMessage()];
@@ -811,6 +857,18 @@ try {
 
             <div class="card" id="pending">
                 <h3>Pending Approvals</h3>
+                <hr style="margin: 10px 0 10px 0;">
+                <form method="GET" action="#pending" style="margin-bottom:20px;">
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" name="search_pending" placeholder="Search by title or author..."
+                            value="<?php echo htmlspecialchars($_GET['search_pending'] ?? ''); ?>"
+                            style="flex:1; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                        <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Search</button>
+                        <?php if (isset($_GET['search_pending'])): ?>
+                            <a href="?#pending" class="btn btn-red"><i class="fa fa-times"></i> Clear</a>
+                        <?php endif; ?>
+                    </div>
+                </form>
                 <?php if (count($pendingList) > 0): ?>
                     <table>
                         <thead>
@@ -858,7 +916,7 @@ try {
                 <?php if ($totalPages_pending > 1): ?>
                     <div style="margin-top:20px; text-align:center;">
                         <?php for ($p = 1; $p <= $totalPages_pending; $p++): ?>
-                            <a href="?page_pending=<?php echo $p; ?>#pending"
+                            <a href="?page_pending=<?php echo $p; ?><?php echo isset($_GET['search_pending']) ? '&search_pending=' . urlencode($_GET['search_pending']) : ''; ?>#pending"
                                 class="btn <?php echo ($p == $page_pending) ? 'btn-primary' : 'btn-blue'; ?>"
                                 style="margin:0 3px; padding:8px 12px;"><?php echo $p; ?></a>
                         <?php endfor; ?>
@@ -871,6 +929,17 @@ try {
                     <span class="section-title">Manage Poems</span>
                     <button onclick="document.getElementById('addPoemModal').style.display='block'" class="btn btn-primary">+ Add Poem</button>
                 </div>
+                <form method="GET" action="#poems" style="margin-bottom:20px;">
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" name="search_poems" placeholder="Search by title, theme, or author..."
+                            value="<?php echo htmlspecialchars($_GET['search_poems'] ?? ''); ?>"
+                            style="flex:1; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                        <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Search</button>
+                        <?php if (isset($_GET['search_poems'])): ?>
+                            <a href="?#poems" class="btn btn-red"><i class="fa fa-times"></i> Clear</a>
+                        <?php endif; ?>
+                    </div>
+                </form>
                 <table>
                     <thead>
                         <tr>
@@ -943,7 +1012,7 @@ try {
                 <?php if ($totalPages_poems > 1): ?>
                     <div style="margin-top:20px; text-align:center;">
                         <?php for ($p = 1; $p <= $totalPages_poems; $p++): ?>
-                            <a href="?page_poems=<?php echo $p; ?>#poems"
+                            <a href="?page_poems=<?php echo $p; ?><?php echo isset($_GET['search_poems']) ? '&search_poems=' . urlencode($_GET['search_poems']) : ''; ?>#poems"
                                 class="btn <?php echo ($p == $page_poems) ? 'btn-primary' : 'btn-blue'; ?>"
                                 style="margin:0 3px; padding:8px 12px;"><?php echo $p; ?></a>
                         <?php endfor; ?>
@@ -956,6 +1025,17 @@ try {
                     <span class="section-title">User Management</span>
                     <button onclick="document.getElementById('addUserModal').style.display='block'" class="btn btn-primary">+ Add User</button>
                 </div>
+                <form method="GET" action="#users" style="margin-bottom:20px;">
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" name="search_users" placeholder="Search by email or username..."
+                            value="<?php echo htmlspecialchars($_GET['search_users'] ?? ''); ?>"
+                            style="flex:1; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                        <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Search</button>
+                        <?php if (isset($_GET['search_users'])): ?>
+                            <a href="?#users" class="btn btn-red"><i class="fa fa-times"></i> Clear</a>
+                        <?php endif; ?>
+                    </div>
+                </form>
                 <table>
                     <thead>
                         <tr>
@@ -993,7 +1073,7 @@ try {
                 <?php if ($totalPages_users > 1): ?>
                     <div style="margin-top:20px; text-align:center;">
                         <?php for ($p = 1; $p <= $totalPages_users; $p++): ?>
-                            <a href="?page_users=<?php echo $p; ?>#users"
+                            <a href="?page_users=<?php echo $p; ?><?php echo isset($_GET['search_users']) ? '&search_users=' . urlencode($_GET['search_users']) : ''; ?>#users"
                                 class="btn <?php echo ($p == $page_users) ? 'btn-primary' : 'btn-blue'; ?>"
                                 style="margin:0 3px; padding:8px 12px;"><?php echo $p; ?></a>
                         <?php endfor; ?>
