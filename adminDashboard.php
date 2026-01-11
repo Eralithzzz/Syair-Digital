@@ -276,6 +276,28 @@ try {
             [':offset' => $offset_report_users, ':end_row' => ($offset_report_users + $limit)]
         );
     }
+    if ($reportType == 'poems') {
+        if ($reportFilter == 'All') {
+            $sqlPrintReport = "SELECT s.syairId, s.title, s.theme, s.content, s.author, st.currentStatus, 
+                           TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE
+                           FROM SYAIR s JOIN STATUS st ON s.syairId = st.syairId
+                           ORDER BY s.syairId DESC";
+            $printReportPoems = fetchAll($sqlPrintReport);
+        } else {
+            $sqlPrintReport = "SELECT s.syairId, s.title, s.theme, s.content, s.author, st.currentStatus, 
+                           TO_CHAR(s.yearPublish, 'YYYY-MM-DD') as PUB_DATE
+                           FROM SYAIR s JOIN STATUS st ON s.syairId = st.syairId 
+                           WHERE st.currentStatus = :status
+                           ORDER BY s.syairId DESC";
+            $printReportPoems = fetchAll($sqlPrintReport, [':status' => $reportFilter]);
+        }
+    } else {
+        // For users report - fetch all users
+        $sqlPrintUsers = "SELECT userId, name, email, role, username, TO_CHAR(created_at, 'DD-MM-YYYY') as JOINED_DATE
+                      FROM BASE_USER
+                      ORDER BY userId DESC";
+        $printUserList = fetchAll($sqlPrintUsers);
+    }
 
     // Add pagination for users
     $page_users = isset($_GET['page_users']) ? (int)$_GET['page_users'] : 1;
@@ -789,6 +811,14 @@ try {
                 overflow: visible;
                 display: block;
             }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .show-print {
+                display: block !important;
+            }
         }
     </style>
 </head>
@@ -1108,75 +1138,163 @@ try {
                 </div>
 
                 <?php if ($reportType == 'poems'): ?>
-                    <h4 class="no-print" style="margin-bottom:15px; color:#555;">Poem Collection Report (<?php echo $reportFilter; ?>)</h4>
-                    <table>
-                        <thead>
-                            <tr style="background:#f9f9f9;">
-                                <th>#</th>
-                                <th>ID</th>
-                                <th>Title</th>
-                                <th>Theme</th>
-                                <th>Author</th>
-                                <th>Content (Excerpt)</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php $i = 1;
-                            foreach ($reportPoems as $row): $content = is_object($row['CONTENT']) ? $row['CONTENT']->load() : $row['CONTENT']; ?>
-                                <tr>
-                                    <td><?php echo $i++; ?></td>
-                                    <td>#<?php echo $row['SYAIRID']; ?></td>
-                                    <td><strong><?php echo htmlspecialchars($row['TITLE']); ?></strong></td>
-                                    <td><?php echo htmlspecialchars($row['THEME']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['AUTHOR']); ?></td>
-                                    <td>
-                                        <div class="content-cell"><?php echo htmlspecialchars($content); ?></div>
-                                    </td>
-                                    <td><?php echo $row['PUB_DATE']; ?></td>
-                                    <td><?php echo $row['CURRENTSTATUS']; ?></td>
+                    <!-- SCREEN VIEW (Paginated) -->
+                    <div class="no-print">
+                        <h4 style="margin-bottom:15px; color:#555;">Poem Collection Report (<?php echo $reportFilter; ?>)</h4>
+                        <table>
+                            <thead>
+                                <tr style="background:#f9f9f9;">
+                                    <th>#</th>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Theme</th>
+                                    <th>Author</th>
+                                    <th>Content (Excerpt)</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php $i = 1;
+                                foreach ($reportPoems as $row):
+                                    $content = is_object($row['CONTENT']) ? $row['CONTENT']->load() : $row['CONTENT'];
+                                ?>
+                                    <tr>
+                                        <td><?php echo $i++; ?></td>
+                                        <td>#<?php echo $row['SYAIRID']; ?></td>
+                                        <td><strong><?php echo htmlspecialchars($row['TITLE']); ?></strong></td>
+                                        <td><?php echo htmlspecialchars($row['THEME']); ?></td>
+                                        <td><?php echo htmlspecialchars($row['AUTHOR']); ?></td>
+                                        <td>
+                                            <div class="content-cell"><?php echo htmlspecialchars($content); ?></div>
+                                        </td>
+                                        <td><?php echo $row['PUB_DATE']; ?></td>
+                                        <td><?php echo $row['CURRENTSTATUS']; ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+
+                        <?php if ($totalPages_report > 1): ?>
+                            <div style="margin-top:20px; text-align:center;">
+                                <?php for ($p = 1; $p <= $totalPages_report; $p++): ?>
+                                    <a href="?report_type=<?php echo $reportType; ?>&filter=<?php echo $reportFilter; ?>&page_report=<?php echo $p; ?>#reports"
+                                        class="btn <?php echo ($p == $page_report) ? 'btn-primary' : 'btn-blue'; ?>"
+                                        style="margin:0 3px; padding:8px 12px;"><?php echo $p; ?></a>
+                                <?php endfor; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- PRINT VIEW (All Records) -->
+                    <div class="show-print" style="display:none;">
+                        <h4 style="margin-bottom:15px; color:#555;">Poem Collection Report (<?php echo $reportFilter; ?>)</h4>
+                        <table>
+                            <thead>
+                                <tr style="background:#f9f9f9;">
+                                    <th>#</th>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Theme</th>
+                                    <th>Author</th>
+                                    <th>Content</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $i = 1;
+                                foreach ($printReportPoems as $row):
+                                    $content = is_object($row['CONTENT']) ? $row['CONTENT']->load() : $row['CONTENT'];
+                                ?>
+                                    <tr>
+                                        <td><?php echo $i++; ?></td>
+                                        <td>#<?php echo $row['SYAIRID']; ?></td>
+                                        <td><strong><?php echo htmlspecialchars($row['TITLE']); ?></strong></td>
+                                        <td><?php echo htmlspecialchars($row['THEME']); ?></td>
+                                        <td><?php echo htmlspecialchars($row['AUTHOR']); ?></td>
+                                        <td><?php echo htmlspecialchars($content); ?></td>
+                                        <td><?php echo $row['PUB_DATE']; ?></td>
+                                        <td><?php echo $row['CURRENTSTATUS']; ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
                 <?php else: ?>
-                    <h4 class="no-print" style="margin-bottom:15px; color:#555;">Registered Users Report</h4>
-                    <table>
-                        <thead>
-                            <tr style="background:#f9f9f9;">
-                                <th>#</th>
-                                <th>ID</th>
-                                <th>Full Name</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Joined Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php $i = 1;
-                            foreach ($userList as $u): ?>
-                                <tr>
-                                    <td><?php echo $i++; ?></td>
-                                    <td>#<?php echo $u['USERID']; ?></td>
-                                    <td><?php echo htmlspecialchars($u['NAME']); ?></td>
-                                    <td><?php echo htmlspecialchars($u['USERNAME']); ?></td>
-                                    <td><?php echo htmlspecialchars($u['EMAIL']); ?></td>
-                                    <td><?php echo $u['ROLE']; ?></td>
-                                    <td><?php echo $u['JOINED_DATE']; ?></td>
+                    <!-- SCREEN VIEW (Paginated Users) -->
+                    <div class="no-print">
+                        <h4 style="margin-bottom:15px; color:#555;">Registered Users Report</h4>
+                        <table>
+                            <thead>
+                                <tr style="background:#f9f9f9;">
+                                    <th>#</th>
+                                    <th>ID</th>
+                                    <th>Full Name</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Joined Date</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-                <?php if ($totalPages_report > 1): ?>
-                    <div style="margin-top:20px; text-align:center;" class="no-print">
-                        <?php for ($p = 1; $p <= $totalPages_report; $p++): ?>
-                            <a href="?report_type=<?php echo $reportType; ?>&filter=<?php echo $reportFilter; ?>&page_report=<?php echo $p; ?>#reports"
-                                class="btn <?php echo ($p == $page_report) ? 'btn-primary' : 'btn-blue'; ?>"
-                                style="margin:0 3px; padding:8px 12px;"><?php echo $p; ?></a>
-                        <?php endfor; ?>
+                            </thead>
+                            <tbody>
+                                <?php $i = 1;
+                                foreach ($userList as $u): ?>
+                                    <tr>
+                                        <td><?php echo $i++; ?></td>
+                                        <td>#<?php echo $u['USERID']; ?></td>
+                                        <td><?php echo htmlspecialchars($u['NAME']); ?></td>
+                                        <td><?php echo htmlspecialchars($u['USERNAME']); ?></td>
+                                        <td><?php echo htmlspecialchars($u['EMAIL']); ?></td>
+                                        <td><?php echo $u['ROLE']; ?></td>
+                                        <td><?php echo $u['JOINED_DATE']; ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+
+                        <?php if ($totalPages_report > 1): ?>
+                            <div style="margin-top:20px; text-align:center;">
+                                <?php for ($p = 1; $p <= $totalPages_report; $p++): ?>
+                                    <a href="?report_type=<?php echo $reportType; ?>&filter=<?php echo $reportFilter; ?>&page_report=<?php echo $p; ?>#reports"
+                                        class="btn <?php echo ($p == $page_report) ? 'btn-primary' : 'btn-blue'; ?>"
+                                        style="margin:0 3px; padding:8px 12px;"><?php echo $p; ?></a>
+                                <?php endfor; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- PRINT VIEW (All Users) -->
+                    <div class="show-print" style="display:none;">
+                        <h4 style="margin-bottom:15px; color:#555;">Registered Users Report</h4>
+                        <table>
+                            <thead>
+                                <tr style="background:#f9f9f9;">
+                                    <th>#</th>
+                                    <th>ID</th>
+                                    <th>Full Name</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Joined Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $i = 1;
+                                foreach ($printUserList as $u): ?>
+                                    <tr>
+                                        <td><?php echo $i++; ?></td>
+                                        <td>#<?php echo $u['USERID']; ?></td>
+                                        <td><?php echo htmlspecialchars($u['NAME']); ?></td>
+                                        <td><?php echo htmlspecialchars($u['USERNAME']); ?></td>
+                                        <td><?php echo htmlspecialchars($u['EMAIL']); ?></td>
+                                        <td><?php echo $u['ROLE']; ?></td>
+                                        <td><?php echo $u['JOINED_DATE']; ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                 <?php endif; ?>
 
